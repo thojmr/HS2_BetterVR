@@ -12,15 +12,16 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.XR;
 using HTC.UnityPlugin.Vive;
+using HS2VR;
 using Valve;
+using Valve.VR;
 using Valve.VR.InteractionSystem;
+using Valve.VR.Extras;
 
 namespace BetterVR
 {
     public static class VRControllerCollider
     {        
-        internal const string Left_Controller_DB_Name = "Left_Controller_DB";
-        internal const string Right_Controller_DB_Name = "Right_Controller_DB";
 
         internal static void SetVRControllerColliderToDynamicBones() 
         {         
@@ -29,22 +30,30 @@ namespace BetterVR
             DynamicBone[] dynamicBones = GameObject.FindObjectsOfType<DynamicBone>();
             if (dynamicBonesV2.Length == 0 && dynamicBones.Length == 0) return;
 
-            // ViveInput
+            //Get the top level VR game object
+            var VROrigin = GameObject.Find("VROrigin");
+            if (VROrigin == null) return;
             
-            var controllerRight = GameObject.Find("Controller (right)");
-            var controllerLeft = GameObject.Find("Controller (left)");
-            if (controllerRight == null && controllerLeft == null) return;
+            //Get all sphere Colliders under this parent (controller colliders)
+            var childColliders = VROrigin.GetComponentsInChildren<SphereCollider>();
+            foreach(var childCollider in childColliders)
+            {
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" origin childCollider  {childCollider.name}");        
+                //Attach a dynamic bone collider to each, then link that to all dynamic bones
+                AttachToControllerAndLink(childCollider.transform.parent.gameObject, childCollider.name, dynamicBones, dynamicBonesV2);            
+            }
 
-            //For each vr controller add dynamic bone collider to it
-            DynamicBoneCollider leftControllerCollider = GetControllerCollider(controllerLeft, Left_Controller_DB_Name);
-            DynamicBoneCollider rightControllerCollider = GetControllerCollider(controllerRight, Right_Controller_DB_Name);
-            if (leftControllerCollider == null && rightControllerCollider == null) return;
+        }
 
-            //For each controller, make it collidable with all dynaic bones (Did I miss any?)
-            AddControllerColliderToDBv2(leftControllerCollider, dynamicBonesV2);
-            AddControllerColliderToDBv2(rightControllerCollider, dynamicBonesV2);
-            AddControllerColliderToDB(leftControllerCollider, dynamicBones);
-            AddControllerColliderToDB(rightControllerCollider, dynamicBones);
+        internal static void AttachToControllerAndLink(GameObject controller, string name, DynamicBone[] dynamicBones, DynamicBone_Ver02[] dynamicBonesV2) 
+        {
+             //For each vr controller add dynamic bone collider to it
+                DynamicBoneCollider controllerCollider = GetControllerCollider(controller, name);
+                if (controllerCollider == null) return;
+
+                //For each controller, make it collidable with all dynaic bones (Did I miss any?)
+                AddControllerColliderToDBv2(controllerCollider, dynamicBonesV2);
+                AddControllerColliderToDB(controllerCollider, dynamicBones);
         }
 
         internal static DynamicBoneCollider GetControllerCollider(GameObject controllerRender, string controllerDBName) 
@@ -71,7 +80,7 @@ namespace BetterVR
             return existingDBCollider;
         }
 
-        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.05f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
+        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
         {
             //Build the dynamic bone collider
             GameObject colliderObject = new GameObject(colliderName);
@@ -112,6 +121,23 @@ namespace BetterVR
                     dynamicBones[z].m_Colliders.Add(controllerCollider);
                 }
             } 
+        }
+
+        internal static List<string> GetJoystickNamesContaining(string matchString)
+        {
+            var matchingNames = new List<string>();
+
+            var names = Input.GetJoystickNames();
+            foreach(var name in names)
+            {
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" JoystickNames  {name}");
+                if (name.Contains(matchString))
+                {
+                    matchingNames.Add(name);
+                }
+            }
+
+            return matchingNames;
         }
 
     }    

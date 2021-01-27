@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using KKAPI;
 
 namespace BetterVR
 {    
@@ -13,7 +12,7 @@ namespace BetterVR
         internal static void TriggerHelperCoroutine() 
         {
             //Only trigger if not already running, and in main game
-            if (coroutineActive || KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame) return;
+            if (coroutineActive) return;
             coroutineActive = true;
 
             pluginInstance.StartCoroutine(LoopEveryXSeconds());
@@ -32,9 +31,6 @@ namespace BetterVR
         {            
             while (coroutineActive) 
             {                
-                //If not in the main game, continue
-                if (KoikatuAPI.GetCurrentGameMode() != GameMode.MainGame) yield return new WaitForSeconds(3);
-
                 VRControllerCollider.SetVRControllerColliderToDynamicBones();
 
                 // BetterVRPlugin.Logger.Log(LogLevel.Info, $"Camera distance {distance}");
