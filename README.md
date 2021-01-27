@@ -2,7 +2,8 @@
 This repository contains the BetterVR plugin for HS2, that adds a few enhancements for VR in story mode.  Still a work in progress.
 
 ## Features
-- TODO
+- Adds colliders to your controllers, so you can boop.
+- Adds config option to adjust the angle of the controller laser pointer.
 
 
 ## How to download

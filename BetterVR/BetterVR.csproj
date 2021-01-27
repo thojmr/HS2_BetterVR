@@ -122,6 +122,7 @@
     <Compile Include="VRCamera.Helper.cs" /> -->
     <Compile Include="VRControllerCollider.Helper.cs" />
     <Compile Include="VRControllerCollider.cs" />
+    <Compile Include="VRController.Helper.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,6 +15,7 @@ namespace BetterVR
         public const string GUID = "BetterVR";
         public const string Version = "0.1";
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
+        public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
 
         internal static new ManualLogSource Logger { get; private set; }
         internal static bool VREnabled = false;
@@ -32,7 +33,13 @@ namespace BetterVR
 
             EnableControllerColliders = Config.Bind<bool>("VR General", "Enable VR controller colliders (boop!)", true, 
                 "Allows collision of VR controllers with all dynamic bones");
-            // EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;            
+            EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;  
+
+
+            SetVRControllerPointerAngle = Config.Bind<float>("VR General", "Laser pointer angle", 0, 
+                new ConfigDescription("0 is the default angle, and negative is down.",
+                new AcceptableValueRange<float>(-90, 90)));
+            SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged;            
                      
 
             //Set up game mode detectors to start certain logic when loading into main game
@@ -60,6 +67,14 @@ namespace BetterVR
                 VRControllerColliderHelper.TriggerHelperCoroutine();
             }
         }
+
+
+        internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
+        {
+            VRControllerHelper.SetControllerPointerAngle(SetVRControllerPointerAngle.Value);
+        }
+
+
 
     }
 }

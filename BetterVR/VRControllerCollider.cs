@@ -38,9 +38,9 @@ namespace BetterVR
             var childColliders = VROrigin.GetComponentsInChildren<SphereCollider>();
             foreach(var childCollider in childColliders)
             {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" origin childCollider  {childCollider.name}");        
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" origin childCollider  {childCollider.GetInstanceID().ToString()}");        
                 //Attach a dynamic bone collider to each, then link that to all dynamic bones
-                AttachToControllerAndLink(childCollider.transform.parent.gameObject, childCollider.name, dynamicBones, dynamicBonesV2);            
+                AttachToControllerAndLink(childCollider.transform.parent.gameObject, childCollider.GetInstanceID().ToString(), dynamicBones, dynamicBonesV2);            
             }
 
         }
@@ -80,7 +80,7 @@ namespace BetterVR
             return existingDBCollider;
         }
 
-        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
+        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.075f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
         {
             //Build the dynamic bone collider
             GameObject colliderObject = new GameObject(colliderName);
@@ -90,6 +90,11 @@ namespace BetterVR
             collider.m_Center = colliderCenter;
             collider.m_Direction = colliderDirection;
             colliderObject.transform.SetParent(controllerGameObject.transform, false);
+
+            //Move the collider more into the hand for the index controller
+            colliderObject.transform.localPosition = controllerGameObject.transform.up * 0.2f; 
+            colliderObject.transform.localPosition = controllerGameObject.transform.forward * -0.1f; 
+
             return collider;
         }
 
@@ -121,23 +126,6 @@ namespace BetterVR
                     dynamicBones[z].m_Colliders.Add(controllerCollider);
                 }
             } 
-        }
-
-        internal static List<string> GetJoystickNamesContaining(string matchString)
-        {
-            var matchingNames = new List<string>();
-
-            var names = Input.GetJoystickNames();
-            foreach(var name in names)
-            {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" JoystickNames  {name}");
-                if (name.Contains(matchString))
-                {
-                    matchingNames.Add(name);
-                }
-            }
-
-            return matchingNames;
         }
 
     }    
