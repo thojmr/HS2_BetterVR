@@ -1,9 +1,10 @@
 # Introduction
-This repository contains the BetterVR plugin for HS2, that adds a few enhancements for VR in story mode.  Still a work in progress.
+This repository contains the BetterVR plugin for HS2, that adds a few enhancements for VR in story mode.  Still a work in progress, and only for Index/Vive users at the moment.
 
 ## Features
 - Adds colliders to your controllers, so you can boop.
-- Adds config option to adjust the angle of the controller laser pointer.
+- Adds config option "Laser Pointer Angle" to adjust the angle of the controller laser pointer.
+- Adds config option "Squeeze to Turn" to turn the camera when squeezing the grips by turning your wrist
 
 
 ## How to download
@@ -65,4 +66,4 @@ Example build task:
     }
 }
 ```
-If sucessfull you should see a HS2_BetterVR.dll file in \bin\
+If sucessfull you should see a HS2_BetterVR.dll file in .\bin\
