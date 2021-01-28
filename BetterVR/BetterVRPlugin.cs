@@ -54,8 +54,18 @@ namespace BetterVR
             VRControllerInput.CheckVROrigin(this);
 
             //Harmony init.  It's magic!
-            // Harmony harmonyCamera = new Harmony(GUID + "_camera");                        
-            // VRCameraHooks.InitHooks(harmonyCamera);
+            Harmony harmony_controller = new Harmony(GUID + "_controller");                        
+            VRControllerHooks.InitHooks(harmony_controller);
+
+
+
+
+            //Potentially important Hs2 classes
+            //ControllerManager  has button input triggers, and the laser pointer
+            //ControllerManagerSample   same thing?
+            //ShowMenuOnClick   shows controller GUI
+            //LaserPointer  -> lineRenderer  (NOT USED AT ALL)
+            //vrTest
         }      
 
 
@@ -90,7 +100,7 @@ namespace BetterVR
 
         internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
         {
-            VRControllerHelper.SetControllerPointerAngle(SetVRControllerPointerAngle.Value);
+            VRControllerPointer.SetControllerPointerAngle(SetVRControllerPointerAngle.Value);
         }
 
 

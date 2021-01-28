@@ -120,10 +120,11 @@
     <!-- 
     <Compile Include="VRCamera.cs" />
     <Compile Include="VRCamera.Helper.cs" /> -->
-    <Compile Include="VRControllerCollider.Helper.cs" />
-    <Compile Include="VRControllerCollider.cs" />
-    <Compile Include="VRController.Helper.cs" />
-    <Compile Include="VRControllerInput.cs" />
+    <Compile Include="VRController.Collider.Helper.cs" />
+    <Compile Include="VRController.Collider.cs" />
+    <Compile Include="VRController.Pointer.cs" />
+    <Compile Include="VRController.Input.cs" />
+    <Compile Include="VRController.Hooks.cs" />
   </ItemGroup>
 
   <ItemGroup>
