@@ -16,9 +16,12 @@ namespace BetterVR
         public const string Version = "0.1";
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
+        public static ConfigEntry<bool> SqueezeToTurn { get; private set; }
 
         internal static new ManualLogSource Logger { get; private set; }
         internal static bool VREnabled = false;
+
+        // internal static bool isOculus = XRDevice.model.Contains("Oculus");
 
 #if DEBUG
         internal static bool debugLog = true;
@@ -35,16 +38,19 @@ namespace BetterVR
                 "Allows collision of VR controllers with all dynamic bones");
             EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;  
 
+            SqueezeToTurn = Config.Bind<bool>("VR General", "Squeeze to Turn", true, 
+                new ConfigDescription("Allows you to turn the headset with hand rotation while zqueezing the controller."));
 
             SetVRControllerPointerAngle = Config.Bind<float>("VR General", "Laser pointer angle", 0, 
                 new ConfigDescription("0 is the default angle, and negative is down.",
                 new AcceptableValueRange<float>(-90, 90)));
-            SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged;            
+            SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged;             
                      
 
             //Set up game mode detectors to start certain logic when loading into main game
-            // GameAPI.RegisterExtraBehaviour<VRCameraGameController>(GUID + "_camera");
             VRControllerColliderHelper.TriggerHelperCoroutine();
+            //Watch for headset initialized
+            StartCoroutine(VRControllerInput.Init());
 
             //Harmony init.  It's magic!
             // Harmony harmonyCamera = new Harmony(GUID + "_camera");                        
@@ -52,6 +58,15 @@ namespace BetterVR
         }      
 
 
+        //Check for controller inputs
+        internal void Update()
+        {
+            //When the user squeezes the controller, apply hand rotation to headset
+            if (SqueezeToTurn.Value && VRControllerInput.VROrigin != null)
+            {
+                VRControllerInput.CheckInputForSqueezeTurn();
+            }
+        }
 
 
 
@@ -73,7 +88,6 @@ namespace BetterVR
         {
             VRControllerHelper.SetControllerPointerAngle(SetVRControllerPointerAngle.Value);
         }
-
 
 
     }
