@@ -1,6 +1,7 @@
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
+using UnityEngine;
 using HarmonyLib;
 using System;
 using KKAPI;
@@ -50,7 +51,7 @@ namespace BetterVR
             //Set up game mode detectors to start certain logic when loading into main game
             VRControllerColliderHelper.TriggerHelperCoroutine();
             //Watch for headset initialized
-            StartCoroutine(VRControllerInput.Init());
+            VRControllerInput.CheckVROrigin(this);
 
             //Harmony init.  It's magic!
             // Harmony harmonyCamera = new Harmony(GUID + "_camera");                        
@@ -61,6 +62,9 @@ namespace BetterVR
         //Check for controller inputs
         internal void Update()
         {
+            // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
+            if (VRControllerInput.VROrigin == null) VRControllerInput.CheckVROrigin(this);
+
             //When the user squeezes the controller, apply hand rotation to headset
             if (SqueezeToTurn.Value && VRControllerInput.VROrigin != null)
             {

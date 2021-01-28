@@ -13,6 +13,7 @@ namespace BetterVR
     public static class VRControllerInput
     {
         internal static GameObject VROrigin;
+        internal static bool isRunning = false;
 
         internal static ViveRoleProperty roleR = ViveRoleProperty.New(HandRole.RightHand);
         internal static ViveRoleProperty roleL = ViveRoleProperty.New(HandRole.LeftHand);
@@ -21,12 +22,30 @@ namespace BetterVR
         //Lazy wait for VR headset origin to exists
         internal static IEnumerator Init()
         {
+            isRunning = true;
+
             while (VROrigin == null) 
             {                
-                VROrigin = GameObject.Find("VROrigin");
-
-                yield return new WaitForSeconds(3);
+                GetVROrigin();
+                yield return new WaitForSeconds(1);
             }            
+
+            isRunning = false;
+        }
+
+        internal static void CheckVROrigin(BetterVRPlugin instance)
+        {
+            if (isRunning) return;
+            instance.StartCoroutine(VRControllerInput.Init());
+        }
+
+
+        internal static void GetVROrigin()
+        {
+            if (VROrigin == null)
+            {
+                VROrigin = GameObject.Find("VROrigin");
+            }
         }
 
 
@@ -36,16 +55,22 @@ namespace BetterVR
             //When squeezing the grip, apply hand rotation to the headset
             if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip))
             {
+                GetVROrigin();
+                if (VROrigin == null) return;
+
                 //Hand velocity along Y axis
                 var velocity = VivePose.GetAngularVelocity(roleL);
-                VROrigin.transform.Rotate(0f, velocity.y, 0f, Space.Self);
+                VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
             }
 
             //Same for either hand
             if (ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
+                GetVROrigin();
+                if (VROrigin == null) return;
+
                 var velocity = VivePose.GetAngularVelocity(roleR);
-                VROrigin.transform.Rotate(0f, velocity.y, 0f, Space.Self);
+                VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
             }
         }
     }
