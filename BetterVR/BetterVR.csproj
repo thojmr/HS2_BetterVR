@@ -117,9 +117,6 @@
 
   <ItemGroup>
     <Compile Include="BetterVRPlugin.cs" />
-    <!-- 
-    <Compile Include="VRCamera.cs" />
-    <Compile Include="VRCamera.Helper.cs" /> -->
     <Compile Include="VRController.Collider.Helper.cs" />
     <Compile Include="VRController.Collider.cs" />
     <Compile Include="VRController.Pointer.cs" />

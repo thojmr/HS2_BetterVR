@@ -25,16 +25,15 @@ namespace BetterVR
             coroutineActive = false;
         }
 
-
-        //Got tired of searching for the correct hooks, just check for new dynamic bones on a loop.  Genious!
+        
+        /// <summary>
+        /// Got tired of searching for the correct hooks, just check for new dynamic bones on a loop.  Genious! (Should be able to use CharCustFunCtrl for this later)
+        /// </summary>
         internal static IEnumerator LoopEveryXSeconds()
         {            
             while (coroutineActive) 
             {                
                 VRControllerCollider.SetVRControllerColliderToDynamicBones();
-
-                // BetterVRPlugin.Logger.Log(LogLevel.Info, $"Camera distance {distance}");
-
                 yield return new WaitForSeconds(3);
             }
         }

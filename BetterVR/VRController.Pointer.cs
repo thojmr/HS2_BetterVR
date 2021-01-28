@@ -1,23 +1,8 @@
 using UnityEngine;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using Config;
-using Illusion.Game;
-using Manager;
 using UniRx;
-using UniRx.Triggers;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
-using UnityEngine.XR;
-using HTC.UnityPlugin.Vive;
-using HS2VR;
-using Valve;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
-using Valve.VR.Extras;
-
 
 namespace BetterVR
 {    
@@ -25,28 +10,47 @@ namespace BetterVR
     {
 
         /// <summary>
+        /// Sets the angle of the laser pointer after some time to let the game objects settle
+        /// </summary>
+        public static IEnumerator SetAngleAfterTime(float userAngle, GameObject laserPointerGo = null)
+        {
+            yield return new WaitForSeconds(0.01f);
+            SetControllerPointerAngle(userAngle, laserPointerGo);
+        }
+
+
+        /// <summary>
         /// Sets the angle of the laser pointer on the VR controller to the users configured value
         /// </summary>
-        public static void SetControllerPointerAngle(float userAngle)
+        public static void SetControllerPointerAngle(float userAngle, GameObject laserPointerGo = null)
         {           
-            //Get the VROrigin GO (headset)
-            var VROrigin = GameObject.Find("VROrigin");
-            if (VROrigin == null) return;
+            var vrParent = laserPointerGo;
+            Component laserPointerComponent;
+
+            //If triggered by config slider, the laser pointer object needs to be found via the headset root
+            if (vrParent == null) 
+            {
+                //Get the VROrigin GO (headset)
+                vrParent = GameObject.Find("VROrigin");
+                if (vrParent == null) return;
+            }
 
             //Get all children
-            var children = VROrigin.GetComponentsInChildren<Component>();
-
+            var children = vrParent.GetComponentsInChildren<Component>();
+// "RenderModel" GO
             //Find the one named laser pointer
-            var laserPointer = children.FirstOrDefault(x => x.name == "LaserPointer");
-            if (laserPointer == null) return;
-
+            laserPointerComponent = children.FirstOrDefault(x => x.name == "LaserPointer");
+            if (laserPointerComponent == null) return;
+            
             //Get the current laser pointer angle (0 is default)
-            var eulers = laserPointer.transform.localRotation.eulerAngles;
+            var eulers = laserPointerComponent.transform.localRotation.eulerAngles;
             //Subtract the desired angle from the current angle, to get the rotational difference
             var newAngle = userAngle - eulers.x;
 
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer current {eulers.x} new {userAngle}");
+
             //Rotate from the current position to the desired position
-            laserPointer.transform.RotateAround(laserPointer.transform.position, laserPointer.transform.right, newAngle);
+            laserPointerComponent.transform.RotateAround(laserPointerComponent.transform.position, laserPointerComponent.transform.right, newAngle);
         }        
 
     }

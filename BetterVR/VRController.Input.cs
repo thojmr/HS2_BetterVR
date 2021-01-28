@@ -19,7 +19,9 @@ namespace BetterVR
         internal static ViveRoleProperty roleL = ViveRoleProperty.New(HandRole.LeftHand);
 
 
-        //Lazy wait for VR headset origin to exists
+        /// <summary>
+        /// Lazy wait for VR headset origin to exists
+        /// </summary>
         internal static IEnumerator Init()
         {
             isRunning = true;
@@ -48,8 +50,10 @@ namespace BetterVR
             }
         }
 
-
-        //When user presses joystick (index) left or right, turn the camera
+        
+        /// <summary>
+        /// When user presses joystick (index) left or right, turn the camera
+        /// </summary>
         internal static void CheckInputForSqueezeTurn()
         {
             //When squeezing the grip, apply hand rotation to the headset

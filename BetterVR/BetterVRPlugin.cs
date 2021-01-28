@@ -55,7 +55,7 @@ namespace BetterVR
 
             //Harmony init.  It's magic!
             Harmony harmony_controller = new Harmony(GUID + "_controller");                        
-            VRControllerHooks.InitHooks(harmony_controller);
+            VRControllerHooks.InitHooks(harmony_controller, this);
 
 
 
