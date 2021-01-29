@@ -69,7 +69,7 @@ namespace BetterVR
         }      
 
 
-        //Check for controller inputs
+        //Check for controller input changes
         internal void Update()
         {
             // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
@@ -88,7 +88,6 @@ namespace BetterVR
         {
             if (!EnableControllerColliders.Value) 
             {            
-                //Force recalculate all verts.  With balloon active it will automatically calaulcate the correct new boundaries
                 VRControllerColliderHelper.StopHelperCoroutine();                                      
             } 
             else 
@@ -100,7 +99,7 @@ namespace BetterVR
 
         internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
         {
-            VRControllerPointer.SetControllerPointerAngle(SetVRControllerPointerAngle.Value);
+            VRControllerPointer.UpdateControllerPointerAngle(SetVRControllerPointerAngle.Value);
         }
 
 

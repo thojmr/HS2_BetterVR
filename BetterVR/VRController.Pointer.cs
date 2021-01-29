@@ -15,14 +15,14 @@ namespace BetterVR
         public static IEnumerator SetAngleAfterTime(float userAngle, GameObject laserPointerGo = null)
         {
             yield return new WaitForSeconds(0.01f);
-            SetControllerPointerAngle(userAngle, laserPointerGo);
+            UpdateControllerPointerAngle(userAngle, laserPointerGo);
         }
 
 
         /// <summary>
         /// Sets the angle of the laser pointer on the VR controller to the users configured value
         /// </summary>
-        public static void SetControllerPointerAngle(float userAngle, GameObject laserPointerGo = null)
+        public static void UpdateControllerPointerAngle(float userAngle, GameObject laserPointerGo = null)
         {           
             var vrParent = laserPointerGo;
             Component laserPointerComponent;
@@ -42,16 +42,30 @@ namespace BetterVR
             laserPointerComponent = children.FirstOrDefault(x => x.name == "LaserPointer");
             if (laserPointerComponent == null) return;
             
+            SetControllerPointerAngle(userAngle, laserPointerComponent);
+        }        
+
+
+        public static void SetControllerPointerAngle(float userAngle, Component laserPointerComponent)
+        {
             //Get the current laser pointer angle (0 is default)
-            var eulers = laserPointerComponent.transform.localRotation.eulerAngles;
+            var eulers = laserPointerComponent.transform.rotation.eulerAngles;
             //Subtract the desired angle from the current angle, to get the rotational difference
             var newAngle = userAngle - eulers.x;
 
+            //Get line renderer start position to rotate around
+            var lineRenderer = laserPointerComponent.transform.gameObject.GetComponentInChildren<LineRenderer>();
+            if (lineRenderer == null) return;
+
+            //Get the starting position
+            var lineRendererStartPos = laserPointerComponent.transform.TransformPoint(lineRenderer.GetPosition(0));
+
             if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer current {eulers.x} new {userAngle}");
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" lineRendererStartPos {lineRendererStartPos} laserPointerComponentPos {laserPointerComponent.transform.position}");
 
             //Rotate from the current position to the desired position
-            laserPointerComponent.transform.RotateAround(laserPointerComponent.transform.position, laserPointerComponent.transform.right, newAngle);
-        }        
+            laserPointerComponent.transform.RotateAround(lineRendererStartPos, laserPointerComponent.transform.right, newAngle);
+        }
 
     }
 }

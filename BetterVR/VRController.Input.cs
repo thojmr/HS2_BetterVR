@@ -48,6 +48,10 @@ namespace BetterVR
             {
                 VROrigin = GameObject.Find("VROrigin");
             }
+
+            // var origin = SteamVR_Render.Top()?.origin;  //The headset rig render
+            // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" SteamVR Origin {origin?.gameObject}");
+
         }
 
         
