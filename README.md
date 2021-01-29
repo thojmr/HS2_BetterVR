@@ -1,5 +1,5 @@
 # Introduction
-This repository contains the BetterVR plugin for HS2, that adds a few enhancements for VR in story mode.  Still a work in progress, and only for Index/Vive users at the moment.
+This repository contains the BetterVR plugin for HS2VR, that adds a few enhancements for VR in Main Game mode.  Still a work in progress, and only for Index/Vive users at the moment.
 
 ## Features
 - Adds colliders to your controllers, so you can boop.
