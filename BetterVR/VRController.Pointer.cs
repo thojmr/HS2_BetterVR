@@ -31,7 +31,7 @@ namespace BetterVR
             if (vrParent == null) 
             {
                 //Get the VROrigin GO (headset)
-                vrParent = GameObject.Find("VROrigin");
+                vrParent = BetterVRPluginHelper.GetVROrigin();
                 if (vrParent == null) return;
             }
 

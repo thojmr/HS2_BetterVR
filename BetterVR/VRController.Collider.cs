@@ -34,18 +34,34 @@ namespace BetterVR
             if (dynamicBonesV2.Length == 0 && dynamicBones.Length == 0) return;
 
             //Get the top level VR game object
-            var VROrigin = GameObject.Find("VROrigin");
+            var VROrigin = BetterVRPluginHelper.GetVROrigin();
             if (VROrigin == null) return;
-            
-            //Get all sphere Colliders under this parent (controller colliders)
-            var childColliders = VROrigin.GetComponentsInChildren<SphereCollider>();
-            foreach(var childCollider in childColliders)
-            {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" origin childCollider  {childCollider.GetInstanceID().ToString()}");        
-                //Attach a dynamic bone collider to each, then link that to all dynamic bones
-                AttachToControllerAndLink(childCollider.transform.parent.gameObject, childCollider.GetInstanceID().ToString(), dynamicBones, dynamicBonesV2);            
-            }
 
+            //Get the controller objects we want to attach colliders to.transform.gameObject
+            var leftHand = GetColliderParent(false);
+            var rightHand = GetColliderParent(true);
+            if (leftHand == null && rightHand == null) return;
+
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Found hand for collider");
+                    
+            //Attach a dynamic bone collider to each, then link that to all dynamic bones
+            if (leftHand) AttachToControllerAndLink(leftHand, leftHand.GetInstanceID().ToString(), dynamicBones, dynamicBonesV2);            
+            if (rightHand) AttachToControllerAndLink(rightHand, rightHand.GetInstanceID().ToString(), dynamicBones, dynamicBonesV2);         
+        }
+
+
+        /// <summary>
+        /// Gets the controller object we want to attach the DB collider to
+        /// </summary>
+        internal static GameObject GetColliderParent(bool rightHand) 
+        {
+            var hand = rightHand ? BetterVRPluginHelper.GetRightHand() : BetterVRPluginHelper.GetLeftHand();
+            if (hand == null) return null;
+            
+            var handRenderModel = hand.GetComponentInChildren<RenderModelHook>();
+            if (handRenderModel == null) return null;
+             
+            return handRenderModel.gameObject;
         }
 
 
@@ -98,8 +114,8 @@ namespace BetterVR
             colliderObject.transform.SetParent(controllerGameObject.transform, false);
 
             //Move the collider more into the hand for the index controller
-            colliderObject.transform.localPosition = controllerGameObject.transform.up * 0.2f; 
-            colliderObject.transform.localPosition = controllerGameObject.transform.forward * -0.1f; 
+            // colliderObject.transform.localPosition = colliderObject.transform.up * -0.1f; 
+            colliderObject.transform.localPosition = colliderObject.transform.forward * -0.1f; 
 
             return collider;
         }
@@ -113,14 +129,19 @@ namespace BetterVR
             if (controllerCollider == null) return;
             if (dynamicBones.Length == 0) return;
 
+            int newDBCount = 0;
+
             //For each heroine dynamic bone, add controller collider
             for (int z = 0; z < dynamicBones.Length; z++)
             {
                 //Check for existing interaction
-                if (!dynamicBones[z].Colliders.Contains(controllerCollider)) {
+                // if (!dynamicBones[z].Colliders.Contains(controllerCollider)) {
                     dynamicBones[z].Colliders.Add(controllerCollider);
-                }
+                    newDBCount++;
+                // }
             } 
+
+            if (newDBCount > 0 &&  BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Linked {newDBCount} new V2 colliders");
         }
 
         /// <summary>
@@ -131,14 +152,19 @@ namespace BetterVR
             if (controllerCollider == null) return;
             if (dynamicBones.Length == 0) return;
 
+            int newDBCount = 0;
+
             //For each heroine dynamic bone, add controller collider
             for (int z = 0; z < dynamicBones.Length; z++)
             {
                 //Check for existing interaction
-                if (!dynamicBones[z].m_Colliders.Contains(controllerCollider)) {
+                // if (!dynamicBones[z].m_Colliders.Contains(controllerCollider)) {
                     dynamicBones[z].m_Colliders.Add(controllerCollider);
-                }
+                    newDBCount++;
+                // }
             } 
+
+            if (newDBCount > 0 &&  BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Linked {newDBCount} new V1 colliders");
         }
 
     }    

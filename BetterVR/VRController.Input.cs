@@ -1,18 +1,11 @@
 using UnityEngine;
 using System.Collections;
 using HTC.UnityPlugin.Vive;
-using System;
-using System.Collections.Generic;
-using HTC.UnityPlugin.Utility;
-using UnityEngine.XR;
-using Valve.VR;
-using UnityEngine.VR;
 
 namespace BetterVR
 {    
     public static class VRControllerInput
     {
-        internal static GameObject VROrigin;
         internal static bool isRunning = false;
 
         internal static ViveRoleProperty roleR = ViveRoleProperty.New(HandRole.RightHand);
@@ -26,9 +19,9 @@ namespace BetterVR
         {
             isRunning = true;
 
-            while (VROrigin == null) 
+            while (BetterVRPluginHelper.VROrigin == null) 
             {                
-                GetVROrigin();
+                BetterVRPluginHelper.GetVROrigin();
                 yield return new WaitForSeconds(1);
             }            
 
@@ -41,19 +34,6 @@ namespace BetterVR
             instance.StartCoroutine(VRControllerInput.Init());
         }
 
-
-        internal static void GetVROrigin()
-        {
-            if (VROrigin == null)
-            {
-                VROrigin = GameObject.Find("VROrigin");
-            }
-
-            // var origin = SteamVR_Render.Top()?.origin;  //The headset rig render
-            // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" SteamVR Origin {origin?.gameObject}");
-
-        }
-
         
         /// <summary>
         /// When user presses joystick (index) left or right, turn the camera
@@ -63,23 +43,30 @@ namespace BetterVR
             //When squeezing the grip, apply hand rotation to the headset
             if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip))
             {
-                GetVROrigin();
-                if (VROrigin == null) return;
+                BetterVRPluginHelper.GetVROrigin();
+                if (BetterVRPluginHelper.VROrigin == null) return;
 
                 //Hand velocity along Y axis
                 var velocity = VivePose.GetAngularVelocity(roleL);
-                VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
+                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
             }
 
             //Same for either hand
             if (ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
-                GetVROrigin();
-                if (VROrigin == null) return;
+                BetterVRPluginHelper.GetVROrigin();
+                if (BetterVRPluginHelper.VROrigin == null) return;
 
                 var velocity = VivePose.GetAngularVelocity(roleR);
-                VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
+                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
             }
+
+                //Oculus input
+                // if (_hand == HandRole.LeftHand)
+				// {
+				// 	return OVRInput.Get(OVRInput.RawAxis2D.LThumbstick, OVRInput.Controller.Active);
+				// }
+				// return OVRInput.Get(OVRInput.RawAxis2D.RThumbstick, OVRInput.Controller.Active);
         }
     }
 }

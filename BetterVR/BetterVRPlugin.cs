@@ -73,10 +73,10 @@ namespace BetterVR
         internal void Update()
         {
             // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
-            if (VRControllerInput.VROrigin == null) VRControllerInput.CheckVROrigin(this);
+            if (BetterVRPluginHelper.VROrigin == null) VRControllerInput.CheckVROrigin(this);
 
             //When the user squeezes the controller, apply hand rotation to headset
-            if (SqueezeToTurn.Value && VRControllerInput.VROrigin != null)
+            if (SqueezeToTurn.Value && BetterVRPluginHelper.VROrigin != null)
             {
                 VRControllerInput.CheckInputForSqueezeTurn();
             }
