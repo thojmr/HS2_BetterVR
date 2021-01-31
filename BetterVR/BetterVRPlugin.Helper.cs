@@ -64,6 +64,12 @@ namespace BetterVR
             var children = parent?.GetComponents<Component>();
             if (children == null) return;
 
+            if (level == 0) 
+            {
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" "); 
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" [LogChildrenComponents]");
+            }
+
             //Add spaces to each log level to see what the structure looks like
             var spaces = " "; 
             for (var s = 0; s < level; s++)
@@ -76,7 +82,7 @@ namespace BetterVR
             //Log all child components
             foreach(var child in children)
             {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" {spaces}{child.name}:{child.GetType().Name} {child.transform.position} {child.transform.childCount}:");                   
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" {spaces}{child.name}: {child.GetType().Name} {child.transform.position} {child.transform.childCount}:");                   
             }
 
             if (!recursive) return;
@@ -87,6 +93,52 @@ namespace BetterVR
             {
                 LogChildrenComponents(parent.transform.GetChild(i).gameObject, recursive, level);
             }
+        }
+
+
+         /// <summary>
+        /// Visualize the VR object tree and components under each (debug only)
+        /// </summary>
+        internal static void LogParents(GameObject currentGo, int maxLevel = 1, int currentLevel = 0)
+        {         
+            if (currentLevel == 0) 
+            {
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" "); 
+                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" [LogParents]");
+            }
+
+            //Add spaces to each log level to see what the structure looks like
+            var spaces = " "; 
+            for (var s = 0; s < currentLevel; s++)
+            {
+                spaces += "  ";
+            }
+
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{currentGo.name}"); 
+
+            var children = currentGo?.GetComponents<Component>();
+
+            if (children != null)
+            {
+                //Log all child components
+                foreach(var child in children)
+                {
+                    if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" {spaces}{child.name}: {child.GetType().Name} {child.transform.position} {child.transform.childCount}:");                   
+                }
+            }
+
+            //End when max level hit
+            if (currentLevel >= maxLevel) return;        
+
+            //Get next parent
+            if (currentGo.transform.parent == null) return;
+            var parent = currentGo.transform.parent.gameObject;
+            if (parent == null) return;    
+
+            currentLevel++;
+            //Check for next parent
+            LogParents(parent, maxLevel, currentLevel);
+            
         }
     }
 }
