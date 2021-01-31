@@ -160,5 +160,36 @@ namespace BetterVR
             LogParents(parent, maxLevel, currentLevel);
             
         }
+
+        
+        /// <summary>
+        /// Draw a debug shpere
+        /// </summary>
+        public static GameObject DrawSphere(float radius = 1, Vector3 position = new Vector3())
+        {
+            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere).transform;
+            // sphere.GetComponent<Renderer>().material = new Material(Shader.Find("Transparent/Diffuse")); // assign the selected material to it
+             
+            sphere.name = "DebugSphere";
+            sphere.position = position;
+            sphere.localScale = new Vector3(radius, radius, radius);
+            sphere.GetComponent<Renderer>().enabled = true; // show it
+
+            return sphere.gameObject;
+        }
+
+
+        
+        /// <summary>
+        /// Draw shphere and attach to some parent transform
+        /// </summary>
+        public static void DrawSphereAndAttach(Transform parent, float radius = 1, Vector3 localPosition = new Vector3())
+        {
+            var sphere = DrawSphere(radius);
+            //Attach and move to parent position
+            sphere.transform.SetParent(parent, false);
+
+            sphere.transform.localPosition = localPosition;
+        }
     }
 }

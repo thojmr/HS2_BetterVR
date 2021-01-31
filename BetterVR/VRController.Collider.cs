@@ -102,7 +102,7 @@ namespace BetterVR
         /// <summary>
         /// Adds a dynamic bone collider to a controller GO (Thanks Anon11)
         /// </summary>
-        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.075f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
+        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
         {
             //Build the dynamic bone collider
             GameObject colliderObject = new GameObject(colliderName);
@@ -115,7 +115,9 @@ namespace BetterVR
 
             //Move the collider more into the hand for the index controller
             // colliderObject.transform.localPosition = colliderObject.transform.up * -0.1f; 
-            colliderObject.transform.localPosition = colliderObject.transform.forward * -0.1f; 
+            // colliderObject.transform.localPosition = colliderObject.transform.forward * 0.05f;// + colliderObject.transform.up * 0.05f + colliderObject.transform.right * -0.05f; 
+
+            if (BetterVRPlugin.debugLog) BetterVRPluginHelper.DrawSphereAndAttach(controllerGameObject.transform, colliderRadius);            
 
             return collider;
         }
