@@ -4,7 +4,8 @@ This repository contains the BetterVR plugin for HS2VR, that adds a few enhancem
 ## Features
 - Adds colliders to your controllers, so you can boop.
 - Adds config option "Laser Pointer Angle" to adjust the angle of the controller laser pointer.
-- Adds config option "Squeeze to Turn" to turn the camera when squeezing the grips by turning your wrist
+- Adds config option "Squeeze to Turn" to turn the camera when squeezing the grips by turning wrist.
+- Adds a 'Random' button to the HScene selection screen that will select a random female/male, and start the HScene (Mostly to save on development time).
 
 
 ## How to download
