@@ -51,7 +51,7 @@ namespace BetterVR
 
         public static VRSelectManager.SelectCardInfo GetRandomFemale()
         {
-            //Get all female character card info list
+            //Get all female character card info list (top level folder only)
             var females = GameCharaFileInfoAssist.CreateCharaFileInfoList(0, false, true, false, false, false, true, true);
             var femaleCount = females.Count;
             var winnerNum = GetRandomNum(0, femaleCount-1);

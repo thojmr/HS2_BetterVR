@@ -12,40 +12,52 @@ namespace BetterVR
         /// <summary>
         /// Sets the angle of the laser pointer after some time to let the game objects settle
         /// </summary>
-        public static IEnumerator SetAngleAfterTime(float userAngle, GameObject laserPointerGo = null)
+        public static IEnumerator SetAngleAfterTime(float userAngle, BetterVRPluginHelper.VR_Hand hand = BetterVRPluginHelper.VR_Hand.none)
         {
             yield return new WaitForSeconds(0.01f);
-            UpdateControllerPointerAngle(userAngle, laserPointerGo);
+            UpdateOneOrMoreCtrlPointers(userAngle, hand);
+        }
+
+
+        /// <summary>
+        /// Determine whether to set both hand angles or just one
+        /// </summary>
+        public static void UpdateOneOrMoreCtrlPointers(float userAngle, BetterVRPluginHelper.VR_Hand hand = BetterVRPluginHelper.VR_Hand.none)
+        {
+            if (hand == BetterVRPluginHelper.VR_Hand.none)
+            {
+                GetHandAndSetAngle(userAngle, BetterVRPluginHelper.VR_Hand.left);
+                GetHandAndSetAngle(userAngle, BetterVRPluginHelper.VR_Hand.right);
+            }
+            else 
+            {
+                GetHandAndSetAngle(userAngle, hand);
+            }
         }
 
 
         /// <summary>
         /// Sets the angle of the laser pointer on the VR controller to the users configured value
         /// </summary>
-        public static void UpdateControllerPointerAngle(float userAngle, GameObject laserPointerGo = null)
-        {           
-            var vrParent = laserPointerGo;
-            Component laserPointerComponent;
+        public static void GetHandAndSetAngle(float userAngle, BetterVRPluginHelper.VR_Hand hand)
+        {   
+            //Get the correct hand
+            var vrHand = BetterVRPluginHelper.GetHand(hand);
 
-            //If triggered by config slider, the laser pointer object needs to be found via the headset root
-            if (vrParent == null) 
-            {
-                //Get the VROrigin GO (headset)
-                vrParent = BetterVRPluginHelper.GetVROrigin();
-                if (vrParent == null) return;
-            }
-
-            //Get all children
-            var children = vrParent.GetComponentsInChildren<Component>();
-// "RenderModel" GO
-            //Find the one named laser pointer
-            laserPointerComponent = children.FirstOrDefault(x => x.name == "LaserPointer");
+            //Get all children components
+            var children = vrHand.GetComponentsInChildren<Component>();
+            
+            //Find the component one named laser pointer
+            var laserPointerComponent = children?.FirstOrDefault(x => x.name == "LaserPointer");
             if (laserPointerComponent == null) return;
             
             SetControllerPointerAngle(userAngle, laserPointerComponent);
         }        
 
 
+        /// <summary>
+        /// Sets the controller laser pointer angle for a single hand
+        /// </summary>
         public static void SetControllerPointerAngle(float userAngle, Component laserPointerComponent)
         {
             //Get the current laser pointer angle (0 is default)

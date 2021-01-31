@@ -8,6 +8,14 @@ namespace BetterVR
         public static bool init = true;
 
 
+        public enum VR_Hand
+        {
+            left,
+            right,
+            none
+        }
+
+
         /// <summary>
         /// Get the top level VR game object
         /// </summary>
@@ -28,6 +36,18 @@ namespace BetterVR
             // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" SteamVR Origin {origin?.gameObject}");
 
             return VROrigin;
+        }
+
+
+        /// <summary>
+        /// Use an enum to get the correct hand
+        /// </summary>
+        internal static GameObject GetHand(VR_Hand hand)
+        {
+            if (hand == VR_Hand.left) return GetLeftHand();
+            if (hand == VR_Hand.right) return GetRightHand();
+
+            return null;
         }
 
 

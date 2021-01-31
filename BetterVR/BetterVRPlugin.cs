@@ -102,7 +102,7 @@ namespace BetterVR
 
         internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
         {
-            VRControllerPointer.UpdateControllerPointerAngle(SetVRControllerPointerAngle.Value);
+            VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
         }
 
 
