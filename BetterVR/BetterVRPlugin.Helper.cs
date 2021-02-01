@@ -97,7 +97,7 @@ namespace BetterVR
                 spaces += "  ";
             }
 
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{parent.name}"); 
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{parent.name} {parent.activeSelf}"); 
 
             //Log all child components
             foreach(var child in children)
@@ -134,7 +134,7 @@ namespace BetterVR
                 spaces += "  ";
             }
 
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{currentGo.name}"); 
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{currentGo.name} {currentGo.activeSelf}"); 
 
             var children = currentGo?.GetComponents<Component>();
 

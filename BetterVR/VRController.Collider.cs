@@ -1,22 +1,5 @@
 using UnityEngine;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using Config;
-using Illusion.Game;
-using Manager;
-using UniRx;
-using UniRx.Triggers;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
-using UnityEngine.XR;
-using HTC.UnityPlugin.Vive;
-using HS2VR;
-using Valve;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
-using Valve.VR.Extras;
+using IllusionUtility.GetUtility;
 
 namespace BetterVR
 {
@@ -29,8 +12,8 @@ namespace BetterVR
         internal static void SetVRControllerColliderToDynamicBones() 
         {         
             //Get all dynamic bones
-            DynamicBone_Ver02[] dynamicBonesV2 = GameObject.FindObjectsOfType<DynamicBone_Ver02>();
-            DynamicBone[] dynamicBones = GameObject.FindObjectsOfType<DynamicBone>();
+            var dynamicBonesV2 = GameObject.FindObjectsOfType<DynamicBone_Ver02>();
+            var dynamicBones = GameObject.FindObjectsOfType<DynamicBone>();
             if (dynamicBonesV2.Length == 0 && dynamicBones.Length == 0) return;
 
             //Get the top level VR game object
@@ -38,8 +21,8 @@ namespace BetterVR
             if (VROrigin == null) return;
 
             //Get the controller objects we want to attach colliders to.transform.gameObject
-            var leftHand = GetColliderParent(false);
-            var rightHand = GetColliderParent(true);
+            var leftHand = BetterVRPluginHelper.GetLeftHand();
+            var rightHand = BetterVRPluginHelper.GetRightHand();
             if (leftHand == null && rightHand == null) return;
 
             if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Found hand for collider");
@@ -51,17 +34,15 @@ namespace BetterVR
 
 
         /// <summary>
-        /// Gets the controller object we want to attach the DB collider to
+        /// Gets the transform of the squeeze button
         /// </summary>
-        internal static GameObject GetColliderParent(bool rightHand) 
+        internal static Transform GetColliderPosition(GameObject hand) 
         {
-            var hand = rightHand ? BetterVRPluginHelper.GetRightHand() : BetterVRPluginHelper.GetLeftHand();
-            if (hand == null) return null;
-            
-            var handRenderModel = hand.GetComponentInChildren<RenderModelHook>();
-            if (handRenderModel == null) return null;
+            //render location
+            var renderTf = hand.transform.FindLoop("OpenVRRenderModel");
+            if (renderTf == null) return null;        
              
-            return handRenderModel.gameObject;
+            return renderTf;
         }
 
 
@@ -71,7 +52,7 @@ namespace BetterVR
         internal static void AttachToControllerAndLink(GameObject controller, string name, DynamicBone[] dynamicBones, DynamicBone_Ver02[] dynamicBonesV2) 
         {
             //For each vr controller add dynamic bone collider to it
-            DynamicBoneCollider controllerCollider = GetOrAttachCollider(controller, name);
+            var controllerCollider = GetOrAttachCollider(controller, name);
             if (controllerCollider == null) return;
 
             //For each controller, make it collidable with all dynaic bones (Did I miss any?)
@@ -88,7 +69,7 @@ namespace BetterVR
             if (controllerGameObject == null) return null;
 
             //Check for existing DB collider that may have been attached earlier
-            DynamicBoneCollider existingDBCollider = controllerGameObject.GetComponentInChildren<DynamicBoneCollider>();
+            var existingDBCollider = controllerGameObject.GetComponentInChildren<DynamicBoneCollider>();
             if (existingDBCollider == null) 
             {
                 //Add a DB collider to the controller
@@ -104,20 +85,23 @@ namespace BetterVR
         /// </summary>
         internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
         {
+            var renderModelTf = GetColliderPosition(controllerGameObject);
+            if (renderModelTf == null) return null;
+
             //Build the dynamic bone collider
-            GameObject colliderObject = new GameObject(colliderName);
-            DynamicBoneCollider collider = colliderObject.AddComponent<DynamicBoneCollider>();
+            var colliderObject = new GameObject(colliderName);
+            var collider = colliderObject.AddComponent<DynamicBoneCollider>();
             collider.m_Radius = colliderRadius;
             collider.m_Height = collierHeight;
             collider.m_Center = colliderCenter;
             collider.m_Direction = colliderDirection;
-            colliderObject.transform.SetParent(controllerGameObject.transform, false);
-
+            colliderObject.transform.SetParent(renderModelTf.transform, false);
+            
             //Move the collider more into the hand for the index controller
-            // colliderObject.transform.localPosition = colliderObject.transform.up * -0.1f; 
-            // colliderObject.transform.localPosition = colliderObject.transform.forward * 0.05f;// + colliderObject.transform.up * 0.05f + colliderObject.transform.right * -0.05f; 
+            var localPos = colliderObject.transform.up * 0.8f + colliderObject.transform.forward * -0.075f;
+            colliderObject.transform.localPosition = localPos; 
 
-            if (BetterVRPlugin.debugLog) BetterVRPluginHelper.DrawSphereAndAttach(controllerGameObject.transform, colliderRadius);            
+            // if (BetterVRPlugin.debugLog) BetterVRPluginHelper.DrawSphereAndAttach(renderModelTf.transform, colliderRadius, localPos);            
 
             return collider;
         }
