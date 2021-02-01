@@ -186,6 +186,14 @@ namespace BetterVR
         public static void DrawSphereAndAttach(Transform parent, float radius = 1, Vector3 localPosition = new Vector3())
         {
             var sphere = DrawSphere(radius);
+
+            //If parent has a debug sphere delete it
+            var existingSphere = parent.Find("DebugSphere");
+            if (existingSphere != null)
+            {
+                GameObject.Destroy(existingSphere.gameObject);
+            }
+
             //Attach and move to parent position
             sphere.transform.SetParent(parent, false);
 

@@ -50,21 +50,20 @@ namespace BetterVR
             //Find the component one named laser pointer
             if (laserPointerTf == null) return;
             
-            SetControllerPointerAngle(userAngle, laserPointerTf.gameObject, vrHand);
+            CalculateControllerPointerAngle(userAngle, laserPointerTf.gameObject, vrHand);
         }        
 
 
         /// <summary>
-        /// Sets the controller laser pointer angle for a single hand
+        /// Calculates the controller laser pointer angle for a single hand
         /// </summary>
-        public static void SetControllerPointerAngle(float userAngle, GameObject laserPointerGO, GameObject hand)
+        public static void CalculateControllerPointerAngle(float userAngle, GameObject laserPointerGO, GameObject hand)
         {
             //Subtract the desired angle from the current angle, to get the rotational difference
-            var rotateAmount = GetNewAngleDifference(userAngle, laserPointerGO);
+            var rotateAmount = GetNewAngleDifference(userAngle, laserPointerGO.transform);
 
             //Get line renderer start position to rotate around
             var lineRenderer = laserPointerGO.GetComponentInChildren<LineRenderer>();
-            lineRenderer.useWorldSpace = false;
             if (lineRenderer == null) return;
 
             //Get the starting position
@@ -74,20 +73,31 @@ namespace BetterVR
             if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" line comp to start dist {Vector3.Distance(lineRendererStartPos, laserPointerGO.transform.position)}");
 
             //Rotate from the current position to the desired position
+            SetControllerPointerAngle(rotateAmount, laserPointerGO, lineRendererStartPos);
+            
+            if (BetterVRPlugin.debugLog) BetterVRPluginHelper.DrawSphereAndAttach(lineRenderer.transform, 0.02f, lineRenderer.transform.position + lineRendererStartPos);
+        }
+
+
+        /// <summary>
+        /// Set the laser pointer oject rotation
+        /// </summary>
+        public static void SetControllerPointerAngle(float rotateAmount, GameObject laserPointerGO, Vector3 lineRendererStartPos)
+        {
             laserPointerGO.transform.RotateAround(lineRendererStartPos, laserPointerGO.transform.right, rotateAmount);
 
-            BetterVRPluginHelper.DrawSphereAndAttach(laserPointerGO.transform, 0.02f);
-            BetterVRPluginHelper.DrawSphereAndAttach(lineRenderer.transform, 0.02f, lineRenderer.transform.position + lineRendererStartPos);
+            if (BetterVRPlugin.debugLog) BetterVRPluginHelper.DrawSphereAndAttach(laserPointerGO.transform, 0.02f);            
         }
+
 
 
         /// <summary>
         /// Get the differnce in rotation to the new angle
         /// </summary>
-        public static float GetNewAngleDifference(float userAngle, GameObject laserPointerGO)
+        public static float GetNewAngleDifference(float userAngle, Transform laserPointerTf)
         {
             //Get the current laser pointer angle (0 is default)
-            var eulers = laserPointerGO.transform.rotation.eulerAngles;
+            var eulers = laserPointerTf.rotation.eulerAngles;
 
             if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer current {eulers.x} new {userAngle}");
 
