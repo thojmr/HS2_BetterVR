@@ -5,7 +5,6 @@ using UnityEngine;
 using HarmonyLib;
 using System;
 using KKAPI;
-using HS2VR;
 
 namespace BetterVR 
 {
@@ -33,6 +32,7 @@ namespace BetterVR
         internal void Start() 
         {
             Logger = base.Logger;
+            DebugTools.logger = Logger;
             VRControllerColliderHelper.pluginInstance = this;
 
             EnableControllerColliders = Config.Bind<bool>("VR General", "Enable VR controller colliders (boop!)", true, 

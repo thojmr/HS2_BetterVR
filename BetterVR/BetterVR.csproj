@@ -129,6 +129,7 @@
     <Compile Include="VRController.Hooks.cs" />
     <Compile Include="VRMenu.Random.cs" />
     <Compile Include="VRMenu.Hooks.cs" />
+    <Compile Include="../../#DebugTools/DebugTools.cs" />
   </ItemGroup>
 
   <ItemGroup>

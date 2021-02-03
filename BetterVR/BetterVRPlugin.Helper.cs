@@ -28,7 +28,7 @@ namespace BetterVR
                 //Show vr controler GO tree
                 if (VROrigin != null && init) {
                   init = false;  
-                  if (BetterVRPlugin.debugLog) BetterVRPluginHelper.LogChildrenComponents(VROrigin, true);
+                  if (BetterVRPlugin.debugLog) DebugTools.LogChildrenComponents(VROrigin, true);
                 } 
             }            
 
@@ -75,129 +75,5 @@ namespace BetterVR
             return rightHand.gameObject;
         }
 
-
-        /// <summary>
-        /// Visualize the VR object tree and components under each (debug only)
-        /// </summary>
-        internal static void LogChildrenComponents(GameObject parent, bool recursive = false, int level = 0)
-        {            
-            var children = parent?.GetComponents<Component>();
-            if (children == null) return;
-
-            if (level == 0) 
-            {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" "); 
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" [LogChildrenComponents]");
-            }
-
-            //Add spaces to each log level to see what the structure looks like
-            var spaces = " "; 
-            for (var s = 0; s < level; s++)
-            {
-                spaces += "  ";
-            }
-
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{parent.name} {parent.activeSelf}"); 
-
-            //Log all child components
-            foreach(var child in children)
-            {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" {spaces}{child.name}: {child.GetType().Name} {child.transform.position} {child.transform.childCount}:");                   
-            }
-
-            if (!recursive) return;
-            level++;
-
-            //Loop through each child game object
-            for (var i = 0; i <  parent.transform.childCount; i++)
-            {
-                LogChildrenComponents(parent.transform.GetChild(i).gameObject, recursive, level);
-            }
-        }
-
-
-         /// <summary>
-        /// Visualize the VR object tree and components under each (debug only)
-        /// </summary>
-        internal static void LogParents(GameObject currentGo, int maxLevel = 1, int currentLevel = 0)
-        {         
-            if (currentLevel == 0) 
-            {
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" "); 
-                if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" [LogParents]");
-            }
-
-            //Add spaces to each log level to see what the structure looks like
-            var spaces = " "; 
-            for (var s = 0; s < currentLevel; s++)
-            {
-                spaces += "  ";
-            }
-
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($"{spaces}{currentGo.name} {currentGo.activeSelf}"); 
-
-            var children = currentGo?.GetComponents<Component>();
-
-            if (children != null)
-            {
-                //Log all child components
-                foreach(var child in children)
-                {
-                    if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" {spaces}{child.name}: {child.GetType().Name} {child.transform.position} {child.transform.childCount}:");                   
-                }
-            }
-
-            //End when max level hit
-            if (currentLevel >= maxLevel) return;        
-
-            //Get next parent
-            if (currentGo.transform.parent == null) return;
-            var parent = currentGo.transform.parent.gameObject;
-            if (parent == null) return;    
-
-            currentLevel++;
-            //Check for next parent
-            LogParents(parent, maxLevel, currentLevel);
-            
-        }
-
-        
-        /// <summary>
-        /// Draw a debug shpere
-        /// </summary>
-        public static GameObject DrawSphere(float radius = 1, Vector3 position = new Vector3())
-        {
-            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere).transform;
-            // sphere.GetComponent<Renderer>().material = new Material(Shader.Find("Transparent/Diffuse")); // assign the selected material to it
-             
-            sphere.name = "DebugSphere";
-            sphere.position = position;
-            sphere.localScale = new Vector3(radius, radius, radius);
-            sphere.GetComponent<Renderer>().enabled = true; // show it
-
-            return sphere.gameObject;
-        }
-
-
-        
-        /// <summary>
-        /// Draw shphere and attach to some parent transform
-        /// </summary>
-        public static void DrawSphereAndAttach(Transform parent, float radius = 1, Vector3 localPosition = new Vector3())
-        {
-            var sphere = DrawSphere(radius);
-
-            //If parent has a debug sphere delete it
-            var existingSphere = parent.Find("DebugSphere");
-            if (existingSphere != null)
-            {
-                GameObject.Destroy(existingSphere.gameObject);
-            }
-
-            //Attach and move to parent position
-            sphere.transform.SetParent(parent, false);
-
-            sphere.transform.localPosition = localPosition;
-        }
     }
 }

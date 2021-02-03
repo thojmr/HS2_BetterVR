@@ -95,7 +95,7 @@ namespace BetterVR
             var systemButton = GameObject.Find("btnOption");
             if (systemButton == null) return;
        
-            // if (BetterVRPlugin.debugLog) BetterVRPluginHelper.LogChildrenComponents(systemButton.transform.parent.gameObject);
+            // if (BetterVRPlugin.debugLog) DebugTools.LogChildrenComponents(systemButton.transform.parent.gameObject);
 
             //Make a copy of the "Optional" button as a template
             var btnGOCopy = GameObject.Instantiate(systemButton.transform).gameObject;            
@@ -142,7 +142,7 @@ namespace BetterVR
                 OnSelectRandomBtn();
             });
 
-            // if (BetterVRPlugin.debugLog) BetterVRPluginHelper.LogChildrenComponents(btnGOCopy);
+            // if (BetterVRPlugin.debugLog) DebugTools.LogChildrenComponents(btnGOCopy);
 
             //Set back to parent on canvas
             btnGOCopy.transform.SetParent(systemButton.transform.parent, false);
