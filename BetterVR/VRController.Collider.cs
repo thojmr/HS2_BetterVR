@@ -83,7 +83,8 @@ namespace BetterVR
         /// <summary>
         /// Adds a dynamic bone collider to a controller GO (Thanks Anon11)
         /// </summary>
-        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
+        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, 
+                                                          Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
         {
             var renderModelTf = GetColliderPosition(controllerGameObject);
             if (renderModelTf == null) return null;
@@ -101,7 +102,7 @@ namespace BetterVR
             var localPos = colliderObject.transform.up * 0.8f + colliderObject.transform.forward * -0.075f;
             colliderObject.transform.localPosition = localPos; 
 
-            // if (BetterVRPlugin.debugLog) BetterVRPluginHelper.DrawSphereAndAttach(renderModelTf.transform, colliderRadius, localPos);            
+            if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(renderModelTf.transform, colliderRadius, localPos);            
 
             return collider;
         }
@@ -121,10 +122,11 @@ namespace BetterVR
             for (int z = 0; z < dynamicBones.Length; z++)
             {
                 //Check for existing interaction
-                // if (!dynamicBones[z].Colliders.Contains(controllerCollider)) {
+                if (!dynamicBones[z].Colliders.Contains(controllerCollider)) 
+                {
                     dynamicBones[z].Colliders.Add(controllerCollider);
                     newDBCount++;
-                // }
+                }
             } 
 
             if (newDBCount > 0 &&  BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Linked {newDBCount} new V2 colliders");
@@ -144,10 +146,11 @@ namespace BetterVR
             for (int z = 0; z < dynamicBones.Length; z++)
             {
                 //Check for existing interaction
-                // if (!dynamicBones[z].m_Colliders.Contains(controllerCollider)) {
+                if (!dynamicBones[z].m_Colliders.Contains(controllerCollider)) 
+                {
                     dynamicBones[z].m_Colliders.Add(controllerCollider);
                     newDBCount++;
-                // }
+                }
             } 
 
             if (newDBCount > 0 &&  BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Linked {newDBCount} new V1 colliders");

@@ -1,44 +1,17 @@
 using UnityEngine;
-using System.Collections;
 using HTC.UnityPlugin.Vive;
 
 namespace BetterVR
 {    
     public static class VRControllerInput
     {
-        internal static bool isRunning = false;
 
         internal static ViveRoleProperty roleR = ViveRoleProperty.New(HandRole.RightHand);
         internal static ViveRoleProperty roleL = ViveRoleProperty.New(HandRole.LeftHand);
 
-
-        /// <summary>
-        /// Lazy wait for VR headset origin to exists
-        /// </summary>
-        internal static IEnumerator Init()
-        {
-            isRunning = true;
-
-            while (BetterVRPluginHelper.VROrigin == null) 
-            {                
-                BetterVRPluginHelper.GetVROrigin();
-                yield return new WaitForSeconds(1);
-            }            
-
-            BetterVRPluginHelper.FixWorldScale();
-
-            isRunning = false;
-        }
-
-        internal static void CheckVROrigin(BetterVRPlugin instance)
-        {
-            if (isRunning) return;
-            instance.StartCoroutine(VRControllerInput.Init());
-        }
-
         
         /// <summary>
-        /// When user presses joystick (index) left or right, turn the camera
+        /// When user squeezes the grip, turn the camera via wrists angular veolcity
         /// </summary>
         internal static void CheckInputForSqueezeTurn()
         {
@@ -53,7 +26,7 @@ namespace BetterVR
                 BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
             }
 
-            //Same for either hand
+            //Do for both hands
             if (ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
                 BetterVRPluginHelper.GetVROrigin();

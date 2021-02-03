@@ -1,8 +1,5 @@
 using UnityEngine;
-using System;
 using System.Collections;
-using System.Linq;
-using UniRx;
 
 namespace BetterVR
 {    
@@ -75,7 +72,7 @@ namespace BetterVR
             //Rotate from the current position to the desired position
             SetControllerPointerAngle(rotateAmount, laserPointerGO, lineRendererStartPos);
             
-            if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(lineRenderer.transform, 0.02f, lineRenderer.transform.position + lineRendererStartPos);
+            // if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(lineRenderer.transform, 0.02f, lineRenderer.transform.position + lineRendererStartPos);
         }
 
 
@@ -86,7 +83,7 @@ namespace BetterVR
         {
             laserPointerGO.transform.RotateAround(lineRendererStartPos, laserPointerGO.transform.right, rotateAmount);
 
-            if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(laserPointerGO.transform, 0.02f);            
+            // if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(laserPointerGO.transform, 0.02f);            
         }
 
 

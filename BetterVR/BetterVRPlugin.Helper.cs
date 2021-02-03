@@ -1,11 +1,13 @@
 using UnityEngine;
+using System.Collections;
 
 namespace BetterVR
 {    
     public static class BetterVRPluginHelper
     {     
         public static GameObject VROrigin;
-        public static bool init = true;
+        public static bool init = true;//False once headset GameObject found
+        internal static bool isRunning = false;//True while actively searching for headset GameObject
 
 
         public enum VR_Hand
@@ -73,6 +75,32 @@ namespace BetterVR
             if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetRightHand id {rightHand.GetInstanceID()}");
 
             return rightHand.gameObject;
+        }
+
+
+        internal static void CheckForVROrigin(BetterVRPlugin instance)
+        {
+            if (BetterVRPluginHelper.isRunning) return;
+            instance.StartCoroutine(BetterVRPluginHelper.Init());
+        }
+
+
+        /// <summary>
+        /// Lazy wait for VR headset origin to exists
+        /// </summary>
+        internal static IEnumerator Init()
+        {
+            isRunning = true;
+
+            while (BetterVRPluginHelper.VROrigin == null) 
+            {                
+                BetterVRPluginHelper.GetVROrigin();
+                yield return new WaitForSeconds(1);
+            }            
+
+            BetterVRPluginHelper.FixWorldScale();
+
+            isRunning = false;
         }
 
 
