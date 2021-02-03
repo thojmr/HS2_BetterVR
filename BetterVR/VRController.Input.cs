@@ -25,6 +25,8 @@ namespace BetterVR
                 yield return new WaitForSeconds(1);
             }            
 
+            BetterVRPluginHelper.FixWorldScale();
+
             isRunning = false;
         }
 

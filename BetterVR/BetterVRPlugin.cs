@@ -10,13 +10,11 @@ namespace BetterVR
 {
     [BepInPlugin(GUID, GUID, Version)]
     [BepInProcess("HoneySelect2VR")]
-    public class BetterVRPlugin : BaseUnityPlugin 
+    public partial class BetterVRPlugin : BaseUnityPlugin 
     {
         public const string GUID = "BetterVR";
         public const string Version = "0.1";
-        public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
-        public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
-        public static ConfigEntry<bool> SqueezeToTurn { get; private set; }
+
 
         internal static new ManualLogSource Logger { get; private set; }
         internal static bool VREnabled = false;
@@ -35,18 +33,7 @@ namespace BetterVR
             DebugTools.logger = Logger;
             VRControllerColliderHelper.pluginInstance = this;
 
-            EnableControllerColliders = Config.Bind<bool>("VR General", "Enable VR controller colliders (boop!)", true, 
-                "Allows collision of VR controllers with all dynamic bones");
-            EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;  
-
-            SqueezeToTurn = Config.Bind<bool>("VR General", "Squeeze to Turn", true, 
-                new ConfigDescription("Allows you to turn the headset with hand rotation while zqueezing the controller."));
-
-            SetVRControllerPointerAngle = Config.Bind<float>("VR General", "Laser Pointer Angle", 0, 
-                new ConfigDescription("0 is the default angle, and negative is down.",
-                new AcceptableValueRange<float>(-90, 90)));
-            SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged;             
-                     
+            PluginConfigInit();
 
             //Set up game mode detectors to start certain logic when loading into main game
             VRControllerColliderHelper.TriggerHelperCoroutine();
@@ -59,7 +46,6 @@ namespace BetterVR
 
             Harmony harmony_menu = new Harmony(GUID + "_menu");                        
             VRMenuHooks.InitHooks(harmony_menu, this);
-
 
 
 
@@ -84,27 +70,6 @@ namespace BetterVR
                 VRControllerInput.CheckInputForSqueezeTurn();
             }
         }
-
-
-
-        internal void EnableControllerColliders_SettingsChanged(object sender, System.EventArgs e) 
-        {
-            if (!EnableControllerColliders.Value) 
-            {            
-                VRControllerColliderHelper.StopHelperCoroutine();                                      
-            } 
-            else 
-            {                
-                VRControllerColliderHelper.TriggerHelperCoroutine();
-            }
-        }
-
-
-        internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
-        {
-            VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
-        }
-
 
     }
 }

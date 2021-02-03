@@ -121,6 +121,7 @@
 
   <ItemGroup>
     <Compile Include="BetterVRPlugin.cs" />
+    <Compile Include="GUI/BetterVRPlugin.Config.cs" />
     <Compile Include="BetterVRPlugin.Helper.cs" />
     <Compile Include="VRController.Collider.Helper.cs" />
     <Compile Include="VRController.Collider.cs" />

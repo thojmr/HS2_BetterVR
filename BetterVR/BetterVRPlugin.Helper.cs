@@ -75,5 +75,18 @@ namespace BetterVR
             return rightHand.gameObject;
         }
 
+
+        /// <summary>
+        /// Enlarge the VR camera, to make the world appear to shrink by 15%
+        /// </summary>
+        public static void FixWorldScale(bool enable = true)
+        {
+            var viveRig = GameObject.Find("ViveRig");
+            if (viveRig != null)
+            {
+                viveRig.transform.localScale = Vector3.one * (enable ? 1.15f : 1);
+            }
+        }
+
     }
 }
