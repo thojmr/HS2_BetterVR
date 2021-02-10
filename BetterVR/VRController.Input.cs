@@ -23,7 +23,7 @@ namespace BetterVR
 
                 //Hand velocity along Y axis
                 var velocity = VivePose.GetAngularVelocity(roleL);
-                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
+                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -(velocity.y * Time.deltaTime * 100)/3f, 0f, Space.Self);
             }
 
             //Do for both hands
@@ -33,7 +33,7 @@ namespace BetterVR
                 if (BetterVRPluginHelper.VROrigin == null) return;
 
                 var velocity = VivePose.GetAngularVelocity(roleR);
-                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -velocity.y/1.5f, 0f, Space.Self);
+                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -(velocity.y * Time.deltaTime * 100)/3f, 0f, Space.Self);
             }
 
                 //Oculus input
