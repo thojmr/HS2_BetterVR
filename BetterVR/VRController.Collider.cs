@@ -96,13 +96,15 @@ namespace BetterVR
             collider.m_Height = collierHeight;
             collider.m_Center = colliderCenter;
             collider.m_Direction = colliderDirection;
-            colliderObject.transform.SetParent(renderModelTf.transform, false);
+            colliderObject.transform.SetParent(renderModelTf, false);
             
             //Move the collider more into the hand for the index controller
-            var localPos = colliderObject.transform.up * 0.8f + colliderObject.transform.forward * -0.075f;
-            colliderObject.transform.localPosition = localPos; 
+            // var localPos = renderModelTf.up * -0.09f + renderModelTf.forward * -0.075f;
+            // var localPos = renderModelTf.forward * -0.075f;
+            // colliderObject.transform.localPosition = localPos; 
 
-            if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(renderModelTf.transform, colliderRadius, localPos);            
+            if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(renderModelTf, colliderRadius);            
+            // if (BetterVRPlugin.debugLog) DebugTools.DrawLineAndAttach(renderModelTf, renderModelTf.TransformPoint(localPos), renderModelTf.position, localPos);
 
             return collider;
         }

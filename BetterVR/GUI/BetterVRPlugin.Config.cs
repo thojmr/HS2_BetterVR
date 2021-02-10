@@ -17,7 +17,7 @@ namespace BetterVR
         public void PluginConfigInit() 
         {
 
-            EnableControllerColliders = Config.Bind<bool>("VR General", "Enable VR controller colliders (boop!)", true, 
+            EnableControllerColliders = Config.Bind<bool>("VR General", "Enable Controller Colliders (boop!)", true, 
                 "Allows collision of VR controllers with all dynamic bones");
             EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;  
 
@@ -31,7 +31,7 @@ namespace BetterVR
 
             FixWorldSizeScale = Config.Bind<bool>("VR General", "Fix World Scale", true, 
                 new ConfigDescription("Everything appears larger in VR, so this will shrink the worldsize down to a more realistic size."));
-            FixWorldSizeScale.SettingChanged += SetVRControllerPointerAngle_SettingsChanged;             
+            FixWorldSizeScale.SettingChanged += FixWorldSizeScale_SettingsChanged;             
 
         }      
 
