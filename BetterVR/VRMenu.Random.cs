@@ -10,6 +10,8 @@ namespace BetterVR
 {
     public static class VRMenuRandom  
     {
+        public static List<GameCharaFileInfo> females = new List<GameCharaFileInfo>();
+        public static List<GameCharaFileInfo> males = new List<GameCharaFileInfo>();
 
         /// <summary>
         /// When the Random button is presses, set a random female/male, and start the HScene
@@ -20,7 +22,8 @@ namespace BetterVR
             VRSelectManager vrMgr = Singleton<VRSelectManager>.Instance;
 
             //Get a random female and set it to the HSCeneManager
-            var female = GetRandomFemale();            
+            var female = GetRandomFemale(females);   
+            if (female == null) return;         
 
             //Set one female and one empty
             Singleton<HSceneManager>.Instance.vrStatusInfos[0].Set(female.status, female.resistH, female.resistPain, female.resistAnal);
@@ -28,7 +31,9 @@ namespace BetterVR
             //When multiple heroine config option is selected, add second heroine
             if (BetterVRPlugin.MultipleRandomHeroine.Value) 
             {
-                var female2 = GetRandomFemale();
+                var female2 = GetRandomFemale(females);
+                if (female2 == null) return;
+
                 Singleton<HSceneManager>.Instance.pngFemales = new string[] {female.fileName, female2.fileName};
                 Singleton<HSceneManager>.Instance.vrStatusInfos[1].Set(female2.status, female2.resistH, female2.resistPain, female2.resistAnal);
             }
@@ -41,7 +46,7 @@ namespace BetterVR
             Singleton<HSceneManager>.Instance.mapID = Singleton<Game>.Instance.mapNo;
 
             //Set one male, and one empty
-            Singleton<HSceneManager>.Instance.pngMale = GetRandomMaleName();
+            Singleton<HSceneManager>.Instance.pngMale = GetRandomMaleName(males);
             Singleton<HSceneManager>.Instance.pngMaleSecond = "";
 
             Singleton<HSceneManager>.Instance.bFutanari = false;            
@@ -65,11 +70,28 @@ namespace BetterVR
         }
 
 
-        public static VRSelectManager.SelectCardInfo GetRandomFemale()
+        /// <summary>
+        /// Get all female card character file information
+        /// </summary>
+        public static List<GameCharaFileInfo> GetAllFemales()
         {
-            //Get all female character card info list (top level folder only)
-            var females = GameCharaFileInfoAssist.CreateCharaFileInfoList(0, false, true, false, false, false, true, true);
+            return GameCharaFileInfoAssist.CreateCharaFileInfoList(0, false, true, false, false, false, true, true);
+        }
+
+
+        public static List<GameCharaFileInfo> GetAllMales()
+        {
+            return GameCharaFileInfoAssist.CreateCharaFileInfoList(1, true, false, true, false, true, true, true);
+        }
+
+
+        public static VRSelectManager.SelectCardInfo GetRandomFemale(List<GameCharaFileInfo> females)
+        {
+            //Check that females list is populated
+            females = females.Count <= 0 ? GetAllFemales() : females;
             var femaleCount = females.Count;
+            if (femaleCount <= 0) return null;
+
             var winnerNum = GetRandomNum(0, femaleCount-1);
             var winner = females[winnerNum];
 
@@ -85,11 +107,13 @@ namespace BetterVR
         }
 
 
-        public static string GetRandomMaleName()
+        public static string GetRandomMaleName(List<GameCharaFileInfo> males)
         {
-            var males = GameCharaFileInfoAssist.CreateCharaFileInfoList(1, true, false, true, false, true, true, true);
-
+            //Check that males list is populated
+            males = males.Count <= 0 ? GetAllMales() : males;
             var maleCount = males.Count;
+            if (maleCount <= 0) return null;
+
             var winnerNum = GetRandomNum(0, maleCount-1);
             var winner = males[winnerNum];
 
@@ -167,6 +191,9 @@ namespace BetterVR
             // var systemButtons = Traverse.Create(__instance).Field("systems").GetValue<VRSelectScene.MenuItemUI[]>();
             // if (systemButtons == null) return;
             // systemButtons.AddItem(newMenuItem);
+
+            females = GetAllFemales();
+            males = GetAllMales();
         }
 
     }
