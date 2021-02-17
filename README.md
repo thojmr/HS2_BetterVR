@@ -7,6 +7,7 @@ This repository contains the BetterVR plugin for HS2VR, that adds a few enhancem
 - Adds config option "Squeeze to Turn" to turn the camera when squeezing the grips by turning wrist.
 - Adds config option "Fix World Scale" to shrink the world size down a little, since VR makes everything appear bigger.
 - Adds a 'Random' button to the HScene selection screen that will select a random female/male, and start the HScene (Mostly to save on development time).
+    - Multiple Heroine when Random: will add two random heroine to the HScene
 
 
 ## How to download

@@ -9,6 +9,7 @@ namespace BetterVR
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
         public static ConfigEntry<bool> SqueezeToTurn { get; private set; }
         public static ConfigEntry<bool> FixWorldSizeScale { get; private set; }
+        public static ConfigEntry<bool> MultipleRandomHeroine { get; private set; }
 
 
         /// <summary>
@@ -31,7 +32,10 @@ namespace BetterVR
 
             FixWorldSizeScale = Config.Bind<bool>("VR General", "Fix World Scale", true, 
                 new ConfigDescription("Everything appears larger in VR, so this will shrink the worldsize down to a more realistic size."));
-            FixWorldSizeScale.SettingChanged += FixWorldSizeScale_SettingsChanged;             
+            FixWorldSizeScale.SettingChanged += FixWorldSizeScale_SettingsChanged; 
+
+            MultipleRandomHeroine = Config.Bind<bool>("VR General", "Multiple Heroine when Random", false, 
+                new ConfigDescription("Will add 2 Heroine to the HScene when the 'Random' button is selected. (Default is 1)"));           
 
         }      
 

@@ -20,12 +20,23 @@ namespace BetterVR
             VRSelectManager vrMgr = Singleton<VRSelectManager>.Instance;
 
             //Get a random female and set it to the HSCeneManager
-            var female = GetRandomFemale();
-            Singleton<HSceneManager>.Instance.pngFemales = new string[] {female.fileName, ""};
+            var female = GetRandomFemale();            
 
             //Set one female and one empty
             Singleton<HSceneManager>.Instance.vrStatusInfos[0].Set(female.status, female.resistH, female.resistPain, female.resistAnal);
-            Singleton<HSceneManager>.Instance.vrStatusInfos[1].Set(0, false, false, false);
+
+            //When multiple heroine config option is selected, add second heroine
+            if (BetterVRPlugin.MultipleRandomHeroine.Value) 
+            {
+                var female2 = GetRandomFemale();
+                Singleton<HSceneManager>.Instance.pngFemales = new string[] {female.fileName, female2.fileName};
+                Singleton<HSceneManager>.Instance.vrStatusInfos[1].Set(female2.status, female2.resistH, female2.resistPain, female2.resistAnal);
+            }
+            else 
+            {
+                Singleton<HSceneManager>.Instance.pngFemales = new string[] {female.fileName, ""};
+                Singleton<HSceneManager>.Instance.vrStatusInfos[1].Set(0, false, false, false);
+            }
             
             Singleton<HSceneManager>.Instance.mapID = Singleton<Game>.Instance.mapNo;
 
