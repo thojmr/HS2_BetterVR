@@ -5,13 +5,21 @@ using UnityEngine;
 using HarmonyLib;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System;
 
 namespace BetterVR
 {
     public static class VRMenuRandom  
     {
+        public enum FemaleIndex
+        {
+            first = 0, 
+            second = 1
+        }
+
         public static List<GameCharaFileInfo> females = new List<GameCharaFileInfo>();
         public static List<GameCharaFileInfo> males = new List<GameCharaFileInfo>();
+
 
         /// <summary>
         /// When the Random button is presses, set a random female/male, and start the HScene
@@ -21,36 +29,12 @@ namespace BetterVR
             //Just need this for fade
             VRSelectManager vrMgr = Singleton<VRSelectManager>.Instance;
 
-            //Get a random female and set it to the HSCeneManager
-            var female = GetRandomFemale(females);   
-            if (female == null) return;         
-
-            //Set one female and one empty
-            Singleton<HSceneManager>.Instance.vrStatusInfos[0].Set(female.status, female.resistH, female.resistPain, female.resistAnal);
-
-            //When multiple heroine config option is selected, add second heroine
-            if (BetterVRPlugin.MultipleRandomHeroine.Value) 
-            {
-                var female2 = GetRandomFemale(females);
-                if (female2 == null) return;
-
-                Singleton<HSceneManager>.Instance.pngFemales = new string[] {female.fileName, female2.fileName};
-                Singleton<HSceneManager>.Instance.vrStatusInfos[1].Set(female2.status, female2.resistH, female2.resistPain, female2.resistAnal);
-            }
-            else 
-            {
-                Singleton<HSceneManager>.Instance.pngFemales = new string[] {female.fileName, ""};
-                Singleton<HSceneManager>.Instance.vrStatusInfos[1].Set(0, false, false, false);
-            }
+            var success = SetFemales();
+            if (!success) return;
             
             Singleton<HSceneManager>.Instance.mapID = Singleton<Game>.Instance.mapNo;
 
-            //Set one male, and one empty
-            Singleton<HSceneManager>.Instance.pngMale = GetRandomMaleName(males);
-            Singleton<HSceneManager>.Instance.pngMaleSecond = "";
-
-            Singleton<HSceneManager>.Instance.bFutanari = false;            
-            Singleton<HSceneManager>.Instance.bFutanariSecond = false;
+            SetMales();
 
             //Load the HScene
             Scene.LoadReserve(new Scene.Data
@@ -61,6 +45,87 @@ namespace BetterVR
             
             vrMgr.Fade.StartFade(FadeSphere.Fade.In, false);
             Singleton<Game>.Instance.IsFade = true;
+        }
+
+
+        /// <summary>
+        /// Select a random map if none is selected already
+        /// </summary>
+        public static void SetMap()
+        {
+            //TODO
+        }
+
+
+        /// <summary>
+        /// Add 1 males names to the hscene init list
+        /// </summary>
+        public static void SetMales()
+        {
+            //Set one male, and one empty
+            Singleton<HSceneManager>.Instance.pngMale = GetRandomMaleName(males);
+            Singleton<HSceneManager>.Instance.pngMaleSecond = "";
+
+            Singleton<HSceneManager>.Instance.bFutanari = false;            
+            Singleton<HSceneManager>.Instance.bFutanariSecond = false;
+        }
+
+
+        /// <summary>
+        /// Add 1 or more females data to the hscene init
+        /// </summary>
+        /// <returns>bool whether it was successful</returns>
+        public static bool SetFemales()
+        {
+            var firstFemaleSelected = FemaleWasSelected(FemaleIndex.first);
+            var secondFemaleSelected = FemaleWasSelected(FemaleIndex.second);                  
+
+            //Init names list if it is null
+            if (Singleton<HSceneManager>.Instance.pngFemales == null || Singleton<HSceneManager>.Instance.pngFemales.Length == 0)
+            {
+                Singleton<HSceneManager>.Instance.pngFemales = new string[2];
+            }
+
+            //If the female has not been selected by the user, add a random one
+            if (!firstFemaleSelected)
+            {
+                //Get a random female and set it to the HSCeneManager
+                var female1 = GetRandomFemale(females);   
+                if (female1 == null) return false;   
+
+                Singleton<HSceneManager>.Instance.pngFemales[(int)FemaleIndex.first] = female1.fileName;
+                Singleton<HSceneManager>.Instance.vrStatusInfos[(int)FemaleIndex.first].Set(female1.status, female1.resistH, female1.resistPain, female1.resistAnal);
+            }
+
+            //Check sedcond female, and second female flag from config
+            if (!secondFemaleSelected && BetterVRPlugin.MultipleRandomHeroine.Value)
+            {
+                //When multiple heroine config option is selected, add second heroine
+                var female2 = GetRandomFemale(females);
+                if (female2 == null) return false;
+
+                //Set the female file names
+                Singleton<HSceneManager>.Instance.pngFemales[(int)FemaleIndex.second] =  female2.fileName;
+                //Set the female attributes, if not already selected by user
+                Singleton<HSceneManager>.Instance.vrStatusInfos[(int)FemaleIndex.second].Set(female2.status, female2.resistH, female2.resistPain, female2.resistAnal);
+            } 
+            else if (!secondFemaleSelected && !BetterVRPlugin.MultipleRandomHeroine.Value)
+            {
+                //When configured for only 1 female, clear out the second's attributes
+                Singleton<HSceneManager>.Instance.pngFemales[(int)FemaleIndex.second] = "";
+                Singleton<HSceneManager>.Instance.vrStatusInfos[(int)FemaleIndex.second].Set(0, false, false, false);
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// Whether or not a female was already selected by the user
+        /// </summary>
+        public static bool FemaleWasSelected(FemaleIndex index)
+        {
+            return Singleton<HSceneManager>.Instance.pngFemales?[(int)index].Length > 0;
         }
 
 
@@ -85,6 +150,9 @@ namespace BetterVR
         }
 
 
+        /// <summary>
+        /// Select a random female from the female card list
+        /// </summary>
         public static VRSelectManager.SelectCardInfo GetRandomFemale(List<GameCharaFileInfo> females)
         {
             //Check that females list is populated
@@ -192,6 +260,7 @@ namespace BetterVR
             // if (systemButtons == null) return;
             // systemButtons.AddItem(newMenuItem);
 
+            //Init the card list here, so we dont have to do it twice later on click
             females = GetAllFemales();
             males = GetAllMales();
         }
