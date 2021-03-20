@@ -25,10 +25,10 @@ namespace BetterVR
             SqueezeToTurn = Config.Bind<bool>("VR General", "Squeeze to Turn", true, 
                 new ConfigDescription("Allows you to turn the headset with hand rotation while zqueezing the controller."));
 
-            SetVRControllerPointerAngle = Config.Bind<float>("VR General", "(Not working yet)Laser Pointer Angle", 0, 
-                new ConfigDescription("0 is the default angle, and negative is down.",
-                new AcceptableValueRange<float>(-90, 90)));
-            SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged; 
+            // SetVRControllerPointerAngle = Config.Bind<float>("VR General", "(Not working yet)Laser Pointer Angle", 0, 
+            //     new ConfigDescription("0 is the default angle, and negative is down.",
+            //     new AcceptableValueRange<float>(-90, 90)));
+            // SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged; 
 
             FixWorldSizeScale = Config.Bind<bool>("VR General", "Fix World Scale", true, 
                 new ConfigDescription("Everything appears larger in VR, so this will shrink the worldsize down to a more realistic size."));
@@ -56,10 +56,10 @@ namespace BetterVR
         }
 
 
-        internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
-        {
-            VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
-        }
+        // internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
+        // {
+        //     VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
+        // }
 
 
         internal void FixWorldSizeScale_SettingsChanged(object sender, System.EventArgs e) 

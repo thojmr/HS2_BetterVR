@@ -1,13 +1,14 @@
 # Introduction
-This repository contains the BetterVR plugin for HS2VR, that adds a few enhancements for VR in Main Game mode.  Only for Index/Vive users at the moment.
+This repository contains the BetterVR plugin for `Honey Select 2 VR`, that adds a few quality of life enhancements.  
+Only for `Index/Vive` users at the moment.
 
 ## Features
 - Adds colliders to your controllers, so you can boop.
-- Adds config option "Squeeze to Turn" to turn the camera when squeezing the grips by rotating your wrists.
-- Adds config option "Fix World Scale" to shrink the world size down a little, since VR makes everything appear bigger than it should.
-- Adds a 'Random' button to the HScene selection screen that will select a random female/male, and start the HScene.
-    - Multiple Heroine when Random: will add two random heroine to the HScene
-- (Not working yet)Adds config option "Laser Pointer Angle" to adjust the angle of the controller laser pointer.
+- Adds config option `Squeeze to Turn` to turn the camera when squeezing the grips and rotate your wrists.
+- Adds config option `Fix World Scale` to shrink the world size down just a little, since VR makes everything appear bigger than it should.
+- Adds a `Random` button to the Character selection screen that will select a random female/male, and start the HScene.
+    - You can select a map, and then hit random to use a specific map with random characters
+    - (May not work in some cases) The config option `Multiple Heroine when Random`: will add two random heroine to the HScene
 
 
 ## How to download
@@ -16,8 +17,8 @@ You can grab the first plugin release [here](https://github.com/thojmr/BetterVR/
 ## How to install
 Almost all plugins are installed in the same way. If there are any extra steps needed they will be added to the plugin descriptions below.
 1. Make sure you have at least BepInEx 5.1 and latest BepisPlugins and KKAPI.
-2. Download the latest release of the plugin you want.
-3. Extract the archive into your game directory. The plugin .dll should end up inside your BepInEx\plugins directory.
+2. Download the latest release of the plugin you want [here](https://github.com/thojmr/BetterVR/releases).
+3. Extract the archive into your game directory. The file HS2_BetterVR.dll should end up in \BepInEx\plugins\ directory.
 4. Check if there are no warnings on game startup, if the plugin has settings it should appear in plugin settings.
 
 ## Compiling with Visual Studio 2019 (The official way)
