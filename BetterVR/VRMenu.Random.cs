@@ -72,7 +72,7 @@ namespace BetterVR
 
 
         /// <summary>
-        /// Add 1 or more females data to the hscene init
+        /// Add 1 or more female data to the hscene init
         /// </summary>
         /// <returns>bool whether it was successful</returns>
         public static bool SetFemales()
@@ -121,11 +121,21 @@ namespace BetterVR
 
 
         /// <summary>
+        /// Clears any selected characters on VRSelectScreen init
+        /// </summary>
+        public static void ClearFemaleSelection()
+        {
+            Singleton<HSceneManager>.Instance.pngFemales = new string[2];
+            Singleton<HSceneManager>.Instance.vrStatusInfos[(int)FemaleIndex.first].Set(0, false, false, false);            
+        }
+
+
+        /// <summary>
         /// Whether or not a female was already selected by the user
         /// </summary>
         public static bool FemaleWasSelected(FemaleIndex index)
         {
-            return Singleton<HSceneManager>.Instance.pngFemales?[(int)index].Length > 0;
+            return Singleton<HSceneManager>.Instance.pngFemales?[(int)index]?.Length > 0;
         }
 
 
@@ -259,10 +269,18 @@ namespace BetterVR
             // var systemButtons = Traverse.Create(__instance).Field("systems").GetValue<VRSelectScene.MenuItemUI[]>();
             // if (systemButtons == null) return;
             // systemButtons.AddItem(newMenuItem);
+        }
 
+
+        /// <summary>
+        /// Load all male and female cards for selection (Only default cards show normally)
+        /// </summary>
+        internal static void VRSelectSceneStart() 
+        {
             //Init the card list here, so we dont have to do it twice later on click
             females = GetAllFemales();
             males = GetAllMales();
+            ClearFemaleSelection();
         }
 
     }

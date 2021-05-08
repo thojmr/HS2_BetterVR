@@ -30,7 +30,8 @@ namespace BetterVR
             VRSelectManager vrMgr = Singleton<VRSelectManager>.Instance;
 
             //Add Random button to GUI, next to optional button
-            VRMenuRandom.AppendRandomButton(__instance);         
+            VRMenuRandom.AppendRandomButton(__instance); 
+            VRMenuRandom.VRSelectSceneStart();         
         }
 
 
