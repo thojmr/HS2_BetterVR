@@ -1,6 +1,9 @@
 using HarmonyLib;
 using HS2VR;
 using Manager;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace BetterVR
 { 
@@ -34,6 +37,24 @@ namespace BetterVR
             VRMenuRandom.VRSelectSceneStart();         
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(GripMoveCrtl), "Start")]
+        internal static void FindVrOrigin(GripMoveCrtl __instance)
+        {
+            GameObject objVROrigin = (GameObject) typeof(GripMoveCrtl).GetField("objVROrigin", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            if (objVROrigin)
+            {
+                BetterVRPluginHelper.Init(objVROrigin);
+            }
+        }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(VRSettingUI), "Start")]
+        internal static void FindResetViewButton(VRSettingUI __instance)
+        {
+            Button recenterButton = (Button) typeof(VRSettingUI).GetField("btnRecenter", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            if (recenterButton != null)
+            {
+                BetterVRPluginHelper.recenterVR = recenterButton.onClick;
+            }
+        }
     }
 }
