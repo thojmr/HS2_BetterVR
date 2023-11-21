@@ -15,25 +15,20 @@ namespace BetterVR
         /// </summary>
         internal static void CheckInputForSqueezeTurn()
         {
-            //When squeezing the grip, apply hand rotation to the headset
-            if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip))
+            //When squeezing both grips, apply hand rotation to the headset
+            if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) && ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
-                BetterVRPluginHelper.GetVROrigin();
-                if (BetterVRPluginHelper.VROrigin == null) return;
+                if (!BetterVRPluginHelper.VROrigin)
+                {
+                    return;
+                }
+                var handVelocityDifference = VivePose.GetVelocity(roleR) - VivePose.GetVelocity(roleL);
+                var handPositionDifference = VivePose.GetPose(roleR).TransformPoint(Vector3.zero)  - VivePose.GetPose(roleL).TransformPoint(Vector3.zero);
+                handVelocityDifference.y = 0;
+                handPositionDifference.y = 0;
+                var angularSpeed = Vector3.Cross(handPositionDifference, handVelocityDifference).y / handPositionDifference.sqrMagnitude;
 
-                //Hand velocity along Y axis
-                var velocity = VivePose.GetAngularVelocity(roleL);
-                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -(velocity.y * Time.deltaTime * 100)/3f, 0f, Space.Self);
-            }
-
-            //Do for both hands
-            if (ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
-            {
-                BetterVRPluginHelper.GetVROrigin();
-                if (BetterVRPluginHelper.VROrigin == null) return;
-
-                var velocity = VivePose.GetAngularVelocity(roleR);
-                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -(velocity.y * Time.deltaTime * 100)/3f, 0f, Space.Self);
+                BetterVRPluginHelper.VROrigin.transform.Rotate(0f, -(angularSpeed * Time.deltaTime * 100)/3f, 0f, Space.Self);
             }
 
                 //Oculus input
