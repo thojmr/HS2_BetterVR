@@ -17,8 +17,7 @@ namespace BetterVR
             if (dynamicBonesV2.Length == 0 && dynamicBones.Length == 0) return;
 
             //Get the top level VR game object
-            var VROrigin = BetterVRPluginHelper.GetVROrigin();
-            if (VROrigin == null) return;
+            if (BetterVRPluginHelper.VROrigin == null) return;
 
             //Get the controller objects we want to attach colliders to.transform.gameObject
             var leftHand = BetterVRPluginHelper.GetLeftHand();
@@ -83,7 +82,7 @@ namespace BetterVR
         /// <summary>
         /// Adds a dynamic bone collider to a controller GO (Thanks Anon11)
         /// </summary>
-        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.1f, float collierHeight = 0f, 
+        internal static DynamicBoneCollider AddDBCollider(GameObject controllerGameObject, string colliderName, float colliderRadius = 0.05f, float collierHeight = 0f, 
                                                           Vector3 colliderCenter = new Vector3(), DynamicBoneCollider.Direction colliderDirection = default)
         {
             var renderModelTf = GetColliderPosition(controllerGameObject);
@@ -97,13 +96,13 @@ namespace BetterVR
             collider.m_Center = colliderCenter;
             collider.m_Direction = colliderDirection;
             colliderObject.transform.SetParent(renderModelTf, false);
-            
+
             //Move the collider more into the hand for the index controller
             // var localPos = renderModelTf.up * -0.09f + renderModelTf.forward * -0.075f;
             // var localPos = renderModelTf.forward * -0.075f;
             // colliderObject.transform.localPosition = localPos; 
 
-            if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(renderModelTf, colliderRadius);            
+            // if (BetterVRPlugin.debugLog) DebugTools.DrawSphereAndAttach(renderModelTf, colliderRadius);
             // if (BetterVRPlugin.debugLog) DebugTools.DrawLineAndAttach(renderModelTf, renderModelTf.TransformPoint(localPos), renderModelTf.position, localPos);
 
             return collider;
