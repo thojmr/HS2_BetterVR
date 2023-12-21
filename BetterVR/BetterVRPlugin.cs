@@ -13,7 +13,6 @@ namespace BetterVR
         public const string GUID = "BetterVR";
         public const string Version = "0.2";
 
-
         internal static new ManualLogSource Logger { get; private set; }
 
 #if DEBUG
@@ -21,6 +20,9 @@ namespace BetterVR
 #else
         internal static bool debugLog = false;
 #endif
+
+        private static VRControllerInput.StripUpdater leftHandStripUpdater;
+        private static VRControllerInput.StripUpdater rightsHandStripUpdater;
 
         internal void Start() 
         {
@@ -37,10 +39,8 @@ namespace BetterVR
             Harmony harmony_controller = new Harmony(GUID + "_controller");                        
             VRControllerHooks.InitHooks(harmony_controller, this);
 
-            Harmony harmony_menu = new Harmony(GUID + "_menu");                        
+            Harmony harmony_menu = new Harmony(GUID + "_menu");
             VRMenuHooks.InitHooks(harmony_menu, this);
-
-
 
             //Potentially important Hs2 classes
                 //ControllerManager  has button input triggers, and the laser pointer
@@ -48,23 +48,35 @@ namespace BetterVR
                 //ShowMenuOnClick   shows controller GUI
                 //vrTest
                     // internal static bool isOculus = XRDevice.model.Contains("Oculus");
+        }
 
-        }      
-
-
-        //Check for controller input changes
+        // Check for controller input changes
         internal void Update()
         {
+            if (leftHandStripUpdater == null) leftHandStripUpdater = new VRControllerInput.StripUpdater(VRControllerInput.roleL);
+            leftHandStripUpdater?.CheckStrip(BetterVRPlugin.GestureStrip.Value == "Left hand");
+
+            if (rightsHandStripUpdater == null) rightsHandStripUpdater = new VRControllerInput.StripUpdater(VRControllerInput.roleR);
+            rightsHandStripUpdater?.CheckStrip(BetterVRPlugin.GestureStrip.Value == "Right hand");
+
             // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
 
-            //When the user squeezes the controller, apply hand rotation to headset
-            if (SqueezeToTurn.Value && BetterVRPluginHelper.VROrigin != null)
+            VRControllerInput.MaybeRestoreVrOriginTransform();
+
+            VRControllerInput.CheckInputForSqueezeScaling();
+            
+            // When the user squeezes the controller, apply hand rotation to headset.
+            if (SqueezeToTurn.Value == "One-handed")
             {
-                VRControllerInput.CheckInputForSqueezeTurn();
+                VRControllerInput.UpdateOneHandedMovements();
+            }
+            else if (SqueezeToTurn.Value == "Two-handed")
+            {
+                VRControllerInput.UpdateTwoHandedMovements();
             }
 
-            if (ViveInput.GetPressUpEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey)) {
-                if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Trigger))
+            if (ViveInput.GetPressUpEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey) && !BetterVRPluginHelper.LeftHandGripPress()) {
+                if (BetterVRPluginHelper.LeftHandTriggerPress())
                 {
                     BetterVRPluginHelper.ResetView();
                 }
@@ -75,8 +87,8 @@ namespace BetterVR
                 }
             }
 
-            if (!ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Trigger) &&
-                ViveInput.GetPressUpEx<HandRole>(HandRole.RightHand, ControllerButton.AKey))
+            if (ViveInput.GetPressUpEx<HandRole>(HandRole.RightHand, ControllerButton.AKey) &&
+                !BetterVRPluginHelper.RightHandGripPress() &&  !BetterVRPluginHelper.RightHandTriggerPress())
             {
                 // Toggle player body visibility.
                 Manager.Config.HData.Visible = !Manager.Config.HData.Visible;
@@ -85,16 +97,19 @@ namespace BetterVR
             HideMonochromeP();
         }
 
+        private static AIChara.ChaControl GetPlayer()
+        {
+            return Singleton<HSceneManager>.Instance?.Hscene?.GetMales()?[0];
+        }
+
         private static void HideMonochromeP()
         {
-            HScene hScene = Singleton<HSceneManager>.Instance.Hscene;
-            if (hScene == null) return;
-            var chaControl = hScene.GetMales()[0];
-            if (chaControl == null) return;
-            chaControl.cmpSimpleBody.targetEtc.objDanTop?.SetActive(false);
-            chaControl.cmpSimpleBody.targetEtc.objMNPB?.SetActive(false);
-            chaControl.cmpSimpleBody.targetEtc.objDanSao?.SetActive(false);
-            chaControl.cmpSimpleBody.targetEtc.objDanTama?.SetActive(false);
+            var targetEtc = GetPlayer()?.cmpSimpleBody?.targetEtc;
+            if (targetEtc == null) return;
+            targetEtc.objDanTop?.SetActive(false);
+            targetEtc.objMNPB?.SetActive(false);
+            targetEtc.objDanSao?.SetActive(false);
+            targetEtc.objDanTama?.SetActive(false);
         }
     }
 }
