@@ -1,7 +1,8 @@
+using HTC.UnityPlugin.Vive;
+using HS2VR;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
-using HS2VR;
 
 namespace BetterVR
 {    
@@ -9,6 +10,21 @@ namespace BetterVR
     {     
         public static GameObject VROrigin;
         public static UnityEvent recenterVR { set; private get; }
+
+        private static Camera _VRCamera;
+        public static Camera VRCamera
+        {
+            get
+            {
+                if (_VRCamera == null)
+                {
+                    _VRCamera = (GameObject.Find("Camera (eye)") ?? GameObject.Find("rCamera (eye)"))?.GetComponent<Camera>();
+                }
+                return _VRCamera;
+            }
+        }
+
+        private static GameObject privacyScreen;
 
         public enum VR_Hand
         {
@@ -69,27 +85,59 @@ namespace BetterVR
         /// <summary>
         /// Enlarge the VR camera, to make the world appear to shrink by xx%
         /// </summary>
-        public static void FixWorldScale(bool enable = true)
+        internal static void FixWorldScale(bool enable = true)
         {
             var viveRig = GameObject.Find("ViveRig");
             if (viveRig != null)
             {
-                viveRig.transform.localScale = Vector3.one * (enable ? BetterVRPlugin.PlayerScale.Value : 1);
-
+                viveRig.transform.localScale = Vector3.one * (enable ? BetterVRPlugin.PlayerScale : 1);
             }
         }
 
         // Moves VR camera to the player's head.
         internal static void ResetView()
         {
+            VRControllerInput.ClearRecordedVrOriginTransform();
+
+            if (VROrigin)
+            {
+                // Remove any vertical rotation.
+                Quaternion rotation = VROrigin.transform.rotation;
+                VROrigin.transform.rotation = Quaternion.Euler(0, rotation.y, 0);
+            }
+
             recenterVR?.Invoke();
             VRSettingUI.CameraInitAction?.Invoke();
         }
 
-        private static GameObject privacyScreen;
-        public static void UpdatePrivacyScreen()
+        internal static bool LeftHandTriggerPress()
+        {
+            return ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Trigger);
+        }
+
+        internal static bool LeftHandGripPress()
+        {
+            return ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip);
+        }
+
+        internal static bool RightHandTriggerPress()
+        {
+            return ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Trigger);
+        }
+
+        internal static bool RightHandGripPress()
+        {
+            return ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip);
+        }
+
+        internal static void UpdatePrivacyScreen()
         {
             EnsurePrivacyScreen().SetActive(BetterVRPlugin.UsePrivacyScreen.Value);
+        }
+
+        internal static Vector2 GetRightHandPadOrStickAxis()
+        {
+            return ViveInput.GetPadAxisEx<HandRole>(HandRole.RightHand);
         }
 
         private static GameObject EnsurePrivacyScreen() {
