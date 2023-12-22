@@ -22,7 +22,7 @@ namespace BetterVR
         [HarmonyPostfix, HarmonyPatch(typeof(ControllerManager), nameof(ControllerManager.SetLeftLaserPointerActive), typeof(bool))]
         internal static void LaserPointer_SetLeftLaserPointerActive(ControllerManager __instance, bool value)
         {
-            if (!value) return;                    
+            if (!value) return;
 
             //If the pointer game object is active, then set the cursor angle
             if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer L active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");    
@@ -95,7 +95,7 @@ namespace BetterVR
             }
 
             // This method works for Oculus controllers' thumbsticks too.
-            var axis = BetterVRPluginHelper.GetRightHandPadOrStickAxis();
+            var axis = BetterVRPluginHelper.GetRightHandPadStickCombinedOutput();
 
             if (axis == Vector2.zero)
             {
@@ -123,10 +123,11 @@ namespace BetterVR
         [HarmonyPrefix, HarmonyPatch(typeof(AIChara.ChaControl), "LoadCharaFbxDataAsync")]
         internal static void ChaControlLoadCharaFbxDataAsyncPatch(AIChara.ChaControl __instance)
         {
-            __instance.GetOrAddComponent<VRControllerInput.StripColliderUpdater>().Init(__instance);
+            __instance.GetOrAddComponent<StripColliderUpdater>().Init(__instance);
+            if (__instance.name.Contains("chaF_001"))
+            {
+                VRControllerCollider.characterForHeightReference = __instance.transform;
+            }
         }
-
-
- 
     }
 }
