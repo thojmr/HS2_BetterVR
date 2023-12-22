@@ -7,6 +7,8 @@ namespace BetterVR
     public partial class BetterVRPlugin
     {
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
+
+        public static ConfigEntry<float> ControllerColliderRadius { get; private set; }
         public static ConfigEntry<string> GestureStrip { get; private set; }
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
         public static ConfigEntry<float> PlayerLogScale { get; private set; }
@@ -30,6 +32,12 @@ namespace BetterVR
             EnableControllerColliders = Config.Bind<bool>("VR General", "Enable Controller Colliders (boop!)", true, 
                 "Allows collision of VR controllers with all dynamic bones");
             EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;
+
+            ControllerColliderRadius = Config.Bind<float>(
+                "VR General", "Controller Collider Radius", 0.03f,
+                 new ConfigDescription(
+                     "Radius of the colliders on the controller",
+                     new AcceptableValueRange<float>(0.01f, 0.5f)));
 
             GestureStrip = Config.Bind<string>(
                 "VR General", "Enable Gesture Strip", "Right hand",
