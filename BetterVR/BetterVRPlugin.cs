@@ -21,8 +21,8 @@ namespace BetterVR
         internal static bool debugLog = false;
 #endif
 
-        private static VRControllerInput.StripUpdater leftHandStripUpdater;
-        private static VRControllerInput.StripUpdater rightsHandStripUpdater;
+        private static StripUpdater leftHandStripUpdater;
+        private static StripUpdater rightsHandStripUpdater;
 
         internal void Start() 
         {
@@ -53,10 +53,10 @@ namespace BetterVR
         // Check for controller input changes
         internal void Update()
         {
-            if (leftHandStripUpdater == null) leftHandStripUpdater = new VRControllerInput.StripUpdater(VRControllerInput.roleL);
+            if (leftHandStripUpdater == null) leftHandStripUpdater = new StripUpdater(VRControllerInput.roleL);
             leftHandStripUpdater?.CheckStrip(BetterVRPlugin.GestureStrip.Value == "Left hand");
 
-            if (rightsHandStripUpdater == null) rightsHandStripUpdater = new VRControllerInput.StripUpdater(VRControllerInput.roleR);
+            if (rightsHandStripUpdater == null) rightsHandStripUpdater = new StripUpdater(VRControllerInput.roleR);
             rightsHandStripUpdater?.CheckStrip(BetterVRPlugin.GestureStrip.Value == "Right hand");
 
             // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
