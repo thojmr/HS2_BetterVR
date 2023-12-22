@@ -135,9 +135,12 @@ namespace BetterVR
             EnsurePrivacyScreen().SetActive(BetterVRPlugin.UsePrivacyScreen.Value);
         }
 
-        internal static Vector2 GetRightHandPadOrStickAxis()
+        internal static Vector2 GetRightHandPadStickCombinedOutput()
         {
-            return ViveInput.GetPadAxisEx<HandRole>(HandRole.RightHand);
+            Vector2 output = ViveInput.GetPadAxisEx<HandRole>(HandRole.RightHand);
+            output.x += ViveInput.GetAxisEx<HandRole>(HandRole.RightHand, ControllerAxis.JoystickX);
+            output.y += ViveInput.GetAxisEx<HandRole>(HandRole.RightHand, ControllerAxis.JoystickY);
+            return output;
         }
 
         private static GameObject EnsurePrivacyScreen() {
