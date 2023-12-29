@@ -7,7 +7,6 @@ namespace BetterVR
     public partial class BetterVRPlugin
     {
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
-
         public static ConfigEntry<float> ControllerColliderRadius { get; private set; }
         public static ConfigEntry<string> GestureStrip { get; private set; }
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
@@ -17,6 +16,13 @@ namespace BetterVR
         public static ConfigEntry<bool> FixWorldSizeScale { get; private set; }
         public static ConfigEntry<bool> MultipleRandomHeroine { get; private set; }
         public static ConfigEntry<bool> UsePrivacyScreen { get; private set; }
+        public static ConfigEntry<bool> SkipTitleScene { get; private set; }
+        public static ConfigEntry<bool> ShowHand { get; private set; }
+        public static ConfigEntry<Vector3> LeftHandOffset { get; private set; }
+        public static ConfigEntry<Quaternion> LeftHandRotation { get; private set; }
+        public static ConfigEntry<Vector3> RightHandOffset { get; private set; }
+        public static ConfigEntry<Quaternion> RightHandRotation { get; private set; }
+        public static ConfigEntry<float> HandScale { get; private set; }
 
         public static float PlayerScale {
             get { return Mathf.Pow(2, PlayerLogScale.Value); }
@@ -42,7 +48,7 @@ namespace BetterVR
             GestureStrip = Config.Bind<string>(
                 "VR General", "Enable Gesture Strip", "Right hand",
                 new ConfigDescription(
-                    "Enable holding trigger and dragging to change cloth states.",
+                    "Enable holding trigger and dragging away to undress or holding trigger and dragging onto to dress",
                     new AcceptableValueList<string>(new string[] { "Disabled", "Left hand", "Right hand" })));
 
             SqueezeToTurn = Config.Bind<string>(
@@ -57,7 +63,7 @@ namespace BetterVR
             PlayerLogScale = Config.Bind<float>(
                 "VR General", "Log2 of Player Scale", Mathf.Log(1.15f, 2f), 
                  new ConfigDescription(
-                     "Log2 of player scale when fixing world size scale, default is Log2(1.15)",
+                     "Log2 of player scale when fixing world size scale, default is Log2(1.15); hold both triggers and both grips to adjust.",
                      new AcceptableValueRange<float>(-4, 4)));
             PlayerLogScale.SettingChanged += FixWorldSizeScale_SettingsChanged;
 
@@ -76,6 +82,44 @@ namespace BetterVR
             UsePrivacyScreen = Config.Bind<bool>("VR General", "Use Privacy Screen", true,
                 new ConfigDescription("Puts a black screen on desktop window"));
             UsePrivacyScreen.SettingChanged += UsePrivacyScreen_SettingsChanged;
+
+            SkipTitleScene = Config.Bind<bool>(
+                "VR General", "Skip Title Scene", false,
+                new ConfigDescription("Skip title scene and go straight to the select scene on game start."));
+
+            ShowHand = Config.Bind<bool>(
+                "VR General", "Show Hand", true, new ConfigDescription("Show VR hands in game."));
+
+            LeftHandOffset = Config.Bind(
+                "VR General",
+                "Left Hand Offset",
+                new Vector3(-0.05f, 0.25f, -0.28f),
+                "Offset of left hand relative to controller center, press left trigger + right A + right B to adjust");
+
+            LeftHandRotation = Config.Bind(
+                "VR General",
+                "Left Hand Rotation",
+                Quaternion.Euler(315, 0, 90),
+                "Rotation of left hand relative to controller, press left trigger + right A + right B to adjust.");
+
+            RightHandOffset = Config.Bind(
+                "VR General",
+                "Right Hand Offset",
+                new Vector3(0.05f, 0.25f, -0.28f),
+                "Offset of left hand relative to controller center, press right trigger + left A + left B to adjust."); ;
+
+            RightHandRotation = Config.Bind(
+                "VR General",
+                "Right Hand Rotation",
+                Quaternion.Euler(315, 0, -90),
+                "Rotation of left hand relative to controller, press right trigger + left A + left B to adjust.");
+
+            HandScale = Config.Bind<float>(
+                "VR General", "Hand Scale", 0.14f,
+                 new ConfigDescription(
+                     "Scale of the VR hand",
+                     new AcceptableValueRange<float>(0.01f, 2f)));
+
         }
 
         /// <summary>
