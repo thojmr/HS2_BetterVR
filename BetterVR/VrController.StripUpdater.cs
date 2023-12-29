@@ -30,7 +30,7 @@ namespace BetterVR
 
         internal void CheckStrip(bool enable)
         {
-            LoadClothIcons();
+            // LoadClothIcons();
 
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
             if (vrOrigin == null) return;
@@ -155,7 +155,7 @@ namespace BetterVR
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
             if (vrOrigin == null) return;
 
-            if (stripIndicator == null)
+            if (stripIndicator == null || stripIndicator.gameObject == null)
             {
                 stripIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
                 stripIndicator.transform.SetParent(vrOrigin, true);
@@ -163,7 +163,7 @@ namespace BetterVR
                 stripIndicator.receiveShadows = false;
                 stripIndicator.shadowCastingMode = ShadowCastingMode.Off;
                 stripIndicator.reflectionProbeUsage = ReflectionProbeUsage.Off;
-                stripIndicator.GetOrAddComponent<StripIndicatorPositionUpdater>().handRole = handRole;
+                stripIndicator.GetOrAddComponent<StripIndicatorPositionUpdater>().isLeftHand = (handRole == VRControllerInput.roleL);
                 stripIndicator.gameObject.SetActive(false);
             }
 
@@ -174,16 +174,16 @@ namespace BetterVR
                 if (clothType >= 0 && clothType < STRIP_INDICATOR_COLORS.Length)
                 {
                     stripIndicator.material.color = STRIP_INDICATOR_COLORS[clothType];
-                    for (int i = 0; i < clothIcons.Count; i++)
-                    {
-                        if (i != clothType)
-                        {
-                            clothIcons[i].SetActive(false);
-                            continue;
-                        }
-                        clothIcons[i].SetActive(true);
-                        // if (BetterVRPluginHelper.VRCamera) clothIconCanvas.transform.LookAt(BetterVRPluginHelper.VRCamera.transform);
-                    }
+                    //for (int i = 0; i < clothIcons.Count; i++)
+                    // {
+                    //    if (i != clothType)
+                    //    {
+                    //        clothIcons[i].SetActive(false);
+                    //        continue;
+                    //    }
+                    //    clothIcons[i].SetActive(true);
+                    //    // if (BetterVRPluginHelper.VRCamera) clothIconCanvas.transform.LookAt(BetterVRPluginHelper.VRCamera.transform);
+                    //}
                 }
             }
         }
@@ -209,13 +209,13 @@ namespace BetterVR
 
         private class StripIndicatorPositionUpdater : MonoBehaviour
         {
-            public ViveRoleProperty handRole;
+            public bool isLeftHand;
 
-            void OnRenderObject()
+            void Update()
             {
-                Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
-                if (vrOrigin == null) return;
-                transform.position = vrOrigin.TransformPoint(VivePose.GetPose(handRole).pos);
+                Transform renderModel = BetterVRPluginHelper.FindControllerRenderModel(isLeftHand ? BetterVRPluginHelper.GetLeftHand() : BetterVRPluginHelper.GetRightHand(), out Vector3 center);
+                transform.position = center + renderModel.transform.TransformVector(Vector3.forward) * 0.05f;
+                if (renderModel != null && renderModel.parent != null) transform.SetParent(renderModel.parent, worldPositionStays: true);
             }
         }
     }
