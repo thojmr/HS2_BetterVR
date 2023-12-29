@@ -88,5 +88,15 @@ namespace BetterVR
                 BetterVRPluginHelper.recenterVR = recenterButton.onClick;
             }
         }
+
+        private static bool hasStartedTitleScene = false;
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HS2.TitleScene), "Start")]
+        internal static void TitleScenePatch(HS2.TitleScene __instance)
+        {
+            bool shouldPlay = BetterVRPlugin.SkipTitleScene.Value && !hasStartedTitleScene;
+            hasStartedTitleScene = true;
+            if (shouldPlay) __instance.OnPlay();
+        }
     }
 }
