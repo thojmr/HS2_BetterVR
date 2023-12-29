@@ -89,13 +89,13 @@ namespace BetterVR
             }
         }
 
-        private static bool hasStartedTitleScene = false;
+        private static bool hasStartedTitleSceneForFirstTime = false;
 
         [HarmonyPostfix, HarmonyPatch(typeof(HS2.TitleScene), "Start")]
         internal static void TitleScenePatch(HS2.TitleScene __instance)
         {
-            bool shouldPlay = BetterVRPlugin.SkipTitleScene.Value && !hasStartedTitleScene;
-            hasStartedTitleScene = true;
+            bool shouldPlay = BetterVRPlugin.SkipTitleScene.Value && !hasStartedTitleSceneForFirstTime;
+            hasStartedTitleSceneForFirstTime = true;
             if (shouldPlay) __instance.OnPlay();
         }
     }
