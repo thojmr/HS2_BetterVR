@@ -1,9 +1,11 @@
 using HTC.UnityPlugin.Vive;
 using HarmonyLib;
+using System.Reflection;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace BetterVR
-{ 
+{
     internal static class VRControllerHooks
     {
 
@@ -15,7 +17,6 @@ namespace BetterVR
             harmonyInstance.PatchAll(typeof(VRControllerHooks));
         }
 
-
         /// <summary>
         /// When the vr controller laser pointer is updated, change the angle to the configured value
         /// </summary>
@@ -25,13 +26,13 @@ namespace BetterVR
             if (!value) return;
 
             //If the pointer game object is active, then set the cursor angle
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer L active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");    
-            
+            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer L active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
+
             // Not working currently.
             // pluginInstance.StartCoroutine(
             //    VRControllerPointer.SetAngleAfterTime(BetterVRPlugin.SetVRControllerPointerAngle.Value, BetterVRPluginHelper.VR_Hand.left)
             // );
-                    
+
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(ControllerManager), nameof(ControllerManager.SetRightLaserPointerActive), typeof(bool))]
@@ -51,31 +52,35 @@ namespace BetterVR
         [HarmonyPrefix, HarmonyPatch(typeof(HS2VR.GripMoveCrtl), "ControllerMove")]
         internal static bool ControllerMovePatch()
         {
-
             if (!BetterVRPluginHelper.LeftHandGripPress() && !BetterVRPluginHelper.RightHandGripPress())
             {
+                // If no grip is pressed, allow vanilla logic to handle turning.
                 return true;
             }
 
             if (BetterVRPlugin.SqueezeToTurn.Value == "One-handed")
             {
+                // Completely delegate to mod logic for both rotation and locomotion.
                 return false;
             }
 
-            if (BetterVRPlugin.SqueezeToTurn.Value == "Two-handed") 
+            if (BetterVRPlugin.SqueezeToTurn.Value == "Two-handed")
             {
                 if (BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.RightHandGripPress())
                 {
+                    // Completely delegate to mod logic for both rotation and locomotion.
                     return false;
                 }
 
                 if (BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress())
                 {
+                    // Only one grip is pressed, let vanilla game handle locomotion.
                     return true;
                 }
 
                 if (BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress())
                 {
+                    // Only one grip is pressed, let vanilla game handle locomotion.
                     return true;
                 }
 
@@ -121,12 +126,35 @@ namespace BetterVR
         // }
 
         [HarmonyPrefix, HarmonyPatch(typeof(AIChara.ChaControl), "LoadCharaFbxDataAsync")]
-        internal static void ChaControlLoadCharaFbxDataAsyncPatch(AIChara.ChaControl __instance)
+        internal static void ChaControlLoadCharaFbxDataAsyncPrefix(AIChara.ChaControl __instance)
         {
             __instance.GetOrAddComponent<StripColliderUpdater>().Init(__instance);
+            
             if (__instance.name.Contains("chaF_001"))
             {
                 VRControllerCollider.characterForHeightReference = __instance.transform;
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
+        internal static void SetImagePositionReporter(Illusion.Component.UI.ColorPicker.Info __instance, PointerEventData cursorPos)
+        {
+            // var rtField = typeof(Illusion.Component.UI.ColorPicker.Info).GetField("myRt", BindingFlags.NonPublic | BindingFlags.Instance);
+            // var rt = (RectTransform)rtField.GetValue(__instance);
+            var dummyRtField = typeof(Illusion.Component.UI.ColorPicker.Info).GetField("dummyRT", BindingFlags.NonPublic | BindingFlags.Instance);
+            var dummyRt = (RectTransform)dummyRtField.GetValue(__instance);
+            if (!dummyRt)
+            {
+                // Some color pickers in the game is missing dummyRT and does not respond to cursor drag properly.
+                // Add dummyRT to fix it as needed.
+                GameObject dummyRtHolder = new GameObject();
+                dummyRtHolder.transform.parent = __instance.transform;
+                dummyRtHolder.transform.localPosition = Vector3.zero;
+                dummyRtHolder.transform.localRotation = Quaternion.identity;
+                RectTransform newDummyRt = dummyRtHolder.AddComponent<RectTransform>();
+                newDummyRt.position = new Vector3(-80, -80, 0);
+                newDummyRt.sizeDelta = new Vector2(160, 160);
+                dummyRtField.SetValue(__instance, newDummyRt);
             }
         }
     }
