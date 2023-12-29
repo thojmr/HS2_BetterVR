@@ -40,7 +40,7 @@ namespace BetterVR
             EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;
 
             ControllerColliderRadius = Config.Bind<float>(
-                "VR General", "Controller Collider Radius", 0.03f,
+                "VR General", "Controller Collider Radius", 0.09f,
                  new ConfigDescription(
                      "Radius of the colliders on the controller",
                      new AcceptableValueRange<float>(0.01f, 0.5f)));
