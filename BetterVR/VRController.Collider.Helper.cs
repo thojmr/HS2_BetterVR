@@ -33,7 +33,7 @@ namespace BetterVR
         {            
             while (coroutineActive) 
             {                
-                VRControllerCollider.SetVRControllerColliderToDynamicBones();
+                VRControllerCollider.UpdateDynamicBoneColliders();
                 yield return new WaitForSeconds(3);
             }
         }
