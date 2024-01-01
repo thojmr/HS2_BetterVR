@@ -13,7 +13,6 @@ namespace BetterVR
     {
         public const string GUID = "BetterVR";
         public const string Version = "0.2";
-
         internal static new ManualLogSource Logger { get; private set; }
 
 #if DEBUG
@@ -24,10 +23,6 @@ namespace BetterVR
 
         private static StripUpdater leftHandStripUpdater;
         private static StripUpdater rightsHandStripUpdater;
-        private static GameObject simplePClone;
-
-        public static int pDisplayMode { get; private set; }  = 1; // 0: invisible, 1: full, 2: silhouette
-
 
         internal void Start() 
         {
@@ -48,15 +43,16 @@ namespace BetterVR
             VRMenuHooks.InitHooks(harmony_menu, this);
 
             //Potentially important Hs2 classes
-                //ControllerManager  has button input triggers, and the laser pointer
-                //ControllerManagerSample   same thing?
-                //ShowMenuOnClick   shows controller GUI
-                //vrTest
-                    // internal static bool isOculus = XRDevice.model.Contains("Oculus");
+            //ControllerManager  has button input triggers, and the laser pointer
+            //ControllerManagerSample   same thing?
+            //ShowMenuOnClick   shows controller GUI
+            //vrTest
+            // internal static bool isOculus = XRDevice.model.Contains("Oculus");
+
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.white);
         }
 
         // Check for controller input changes
-
         internal void Update()
         {
             if (leftHandStripUpdater == null) leftHandStripUpdater = new StripUpdater(VRControllerInput.roleL);
@@ -65,13 +61,16 @@ namespace BetterVR
             if (rightsHandStripUpdater == null) rightsHandStripUpdater = new StripUpdater(VRControllerInput.roleR);
             rightsHandStripUpdater?.CheckStrip(BetterVRPlugin.GestureStrip.Value == "Right hand");
 
+            BetterVRPluginHelper.TryInitializeGloves();
+
+            CheckRadialMenu(BetterVRPluginHelper.leftRadialMenu, HandRole.LeftHand);
+            CheckRadialMenu(BetterVRPluginHelper.rightRadialMenu, HandRole.RightHand);
+
             // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
 
             VRControllerInput.MaybeRestoreVrOriginTransform();
 
             VRControllerInput.CheckInputForSqueezeScaling();
-
-            VRControllerInput.CheckInputForHandReposition();
 
             // When the user squeezes the controller, apply hand rotation to headset.
             if (SqueezeToTurn.Value == "One-handed")
@@ -83,35 +82,7 @@ namespace BetterVR
                 VRControllerInput.UpdateTwoHandedMovements();
             }
 
-            if (ViveInput.GetPressUpEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey) && !BetterVRPluginHelper.LeftHandGripPress()) {
-                if (BetterVRPluginHelper.LeftHandTriggerPress())
-                {
-                    BetterVRPluginHelper.ResetView();
-                    BetterVRPluginHelper.UpdateControllersVisibilty();
-                }
-                else
-                {
-                    // Sync display mode before changing it.
-                    if (!Manager.Config.HData.Son) pDisplayMode = 0;
-                    // Cycle player part display mode.
-                    pDisplayMode = (pDisplayMode + 1) % 3;
-                    // Toggle player part visibility.
-                    Manager.Config.HData.Son = (pDisplayMode != 0);
-                    BetterVRPluginHelper.UpdateControllersVisibilty();
-                }
-            }
-
-            if (ViveInput.GetPressUpEx<HandRole>(HandRole.RightHand, ControllerButton.AKey) &&
-                !BetterVRPluginHelper.RightHandGripPress() &&  !BetterVRPluginHelper.RightHandTriggerPress())
-            {
-                // Toggle player body visibility.
-                Manager.Config.HData.Visible = !Manager.Config.HData.Visible;
-                BetterVRPluginHelper.UpdateControllersVisibilty();
-            }
-
-            UpdateMonochromeP();
-
-            BetterVRPluginHelper.UpdateHandsVisibility();
+            BetterVRPluginHelper.gaugeHitIndicator.UpdateIndicators();
         }
 
         internal static AIChara.ChaControl GetPlayer()
@@ -119,63 +90,75 @@ namespace BetterVR
             return Singleton<HSceneManager>.Instance?.Hscene?.GetMales()?[0];
         }
 
-        private static void UpdateMonochromeP()
+        private static void CheckRadialMenu(RadialMenu radialMenu, HandRole handRole)
         {
-            var player = GetPlayer();
-            if (!player || !player.loadEnd) return;
-
-            bool shouldUseSimpleP = Manager.Config.HData.Son && pDisplayMode == 2;
-            bool shouldUseRegularP = Manager.Config.HData.Son && pDisplayMode == 1;
-
-
-            var simpleBodyEtc = player.cmpSimpleBody?.targetEtc;
-            GameObject simpleBody = simpleBodyEtc?.objBody;
-            if (simplePClone != null)
+            bool menuShouldBeActive = ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.AKey);
+            if (menuShouldBeActive && !radialMenu.gameObject.activeSelf)
             {
-                if (!shouldUseSimpleP || simpleBody == null || simplePClone.transform.parent != simpleBody.transform.parent)
+                radialMenu.gameObject.SetActive(true);
+                radialMenu.captions = new string[]
                 {
-                    GameObject.Destroy(simplePClone);
-                    simplePClone = null;
-                }
-
+                    "Toy",
+                    "",
+                    "Finish H loop stage",
+                    "Scale reset (press trigger)",
+                    "P show/hide",
+                    "View reset (press trigger)",
+                    "Male show/hide",
+                    "Glove posing (other hand)"
+                };
             }
 
-            if (shouldUseSimpleP && simplePClone == null)
+            if (!radialMenu.isActiveAndEnabled) return;
+
+            int selectedItemIndex = radialMenu.selectedItemIndex;
+            bool isTriggerDown = ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Trigger);
+            if (!menuShouldBeActive) radialMenu.gameObject.SetActive(false);
+
+            if (menuShouldBeActive && !isTriggerDown) return;
+
+            switch (selectedItemIndex)
             {
-                GameObject simpleP = simpleBodyEtc?.objDanTop;
-                if (simpleBody && simpleP)
-                {
-                    simplePClone = GameObject.Instantiate(simpleP, simpleP.transform.parent);
-                    simplePClone.transform.SetPositionAndRotation(simpleP.transform.position, simpleP.transform.rotation);
-                    simplePClone.transform.localScale = simpleP.transform.localScale;
-                    // Reparent so that it is a sibling instead of a child of simpleBody and
-                    // can be displayed even if simpleBody is hidden.
-                    simplePClone.transform.SetParent(simpleBody.transform.parent, worldPositionStays: true);
-                    var renderers = simplePClone.GetComponentsInChildren<SkinnedMeshRenderer>();
-                    foreach (var renderer in renderers)
+                case 0:
+                    BetterVRPluginHelper.handHeldToy.CycleMode(handRole == HandRole.RightHand);
+                    BetterVRPluginHelper.UpdateControllersVisibilty();
+                    break;
+                case 2:
+                    BetterVRPluginHelper.FinishH();
+                    break;
+                case 3:
+                    if (isTriggerDown)
                     {
-                        renderer.enabled = true;
-                        renderer.GetOrAddComponent<BetterVRPluginHelper.SilhouetteMaterialSetter>();
+                        // Reset scale
+                        PlayerLogScale.Value = (float)PlayerLogScale.DefaultValue;
                     }
-                }
-            }
-            
-            simplePClone?.SetActive(shouldUseSimpleP);
-
-            // Hide the original part now that there is a clone.
-            var tamaRenderer = simpleBodyEtc?.objDanTama?.GetComponentInChildren<SkinnedMeshRenderer>();
-            if (tamaRenderer) tamaRenderer.enabled = false;
-
-            var saoRenderer = simpleBodyEtc?.objDanSao?.GetComponentInChildren<SkinnedMeshRenderer>();
-            if (saoRenderer) saoRenderer.enabled = false;
-
-            var regularBodyEtc = GetPlayer()?.cmpBody?.targetEtc;
-            if (regularBodyEtc != null)
-            {
-                regularBodyEtc.objMNPB?.SetActive(shouldUseRegularP);
-                regularBodyEtc.objDanTop?.SetActive(shouldUseRegularP);
-                regularBodyEtc.objDanSao?.SetActive(shouldUseRegularP);
-                regularBodyEtc.objDanTama?.SetActive(shouldUseRegularP);
+                    break;
+                case 4:
+                    BetterVRPluginHelper.CyclePlayerPDisplayMode();
+                    break;
+                case 5:
+                    if (isTriggerDown)
+                    {
+                        BetterVRPluginHelper.ResetView();
+                        BetterVRPluginHelper.UpdateControllersVisibilty();
+                    }
+                    break;
+                case 6:
+                    // Toggle player body visibility.
+                    Manager.Config.HData.Visible = !Manager.Config.HData.Visible;
+                    BetterVRPluginHelper.UpdatePlayerColliderActivity();
+                    break;
+                case 7:
+                    if (handRole == HandRole.LeftHand) {
+                        BetterVRPluginHelper.rightGlove?.StartRepositioning();
+                    }
+                    else
+                    {
+                        BetterVRPluginHelper.leftGlove?.StartRepositioning();
+                    }
+                    break;
+                default:
+                    break;
             }
         }
     }
