@@ -1,6 +1,8 @@
 using HTC.UnityPlugin.Vive;
 using HS2VR;
 using IllusionUtility.GetUtility;
+using System.Text.RegularExpressions;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
@@ -8,29 +10,7 @@ using UnityEngine.Events;
 namespace BetterVR
 {    
     public static class BetterVRPluginHelper
-    {     
-        public static GameObject VROrigin;
-        public static UnityEvent recenterVR { set; private get; }
-
-        private static Camera _VRCamera;
-
-        public static Camera VRCamera
-        {
-            get
-            {
-                if (_VRCamera == null)
-                {
-                    _VRCamera = (GameObject.Find("Camera (eye)") ?? GameObject.Find("rCamera (eye)"))?.GetComponent<Camera>();
-                }
-                return _VRCamera;
-            }
-        }
-
-        private static GameObject privacyScreen;
-        private static GameObject gloves;
-        public static GameObject leftGlove;
-        public static GameObject rightGlove;
-
+    {
         public enum VR_Hand
         {
             left,
@@ -38,9 +18,138 @@ namespace BetterVR
             none
         }
 
-       
+        private static readonly Regex HAND_NAME_MATCHER = new Regex("Hand|hand");
+        private static readonly Regex P_NAME_MATCHER = new Regex("Dan|dan");
+
+        public static GameObject VROrigin;
+        public static UnityEvent recenterVR { set; private get; }
+
+        private static Camera _VRCamera;
+        private static GameObject simplePClone;
+        private static int pDisplayMode = 1; // 0: invisible, 1: full, 2: silhouette
+
+        public static Camera VRCamera
+        {
+            get
+            {
+                if (_VRCamera == null) _VRCamera = GameObject.Find("Camera (eye)")?.GetComponent<Camera>();
+                if (_VRCamera == null) _VRCamera = GameObject.Find("rCamera (eye)")?.GetComponent<Camera>();
+                if (_VRCamera == null) _VRCamera = GameObject.Find("rCamera")?.GetComponent<Camera>();
+                if (_VRCamera == null) _VRCamera = GameObject.Find("Camera")?.GetComponent<Camera>();
+                if (_VRCamera == null)
+                {
+                    BetterVRPlugin.Logger.LogWarning("VR Camera not found, may try again later");
+                    var cameras = GameObject.FindObjectsOfType<Camera>();
+                    string cameraNames = "";
+                    foreach (var camera in cameras) cameraNames += cameraNames + "; ";
+                    BetterVRPlugin.Logger.LogDebug("Current cameras in scene: " + cameraNames);
+                }
+                return _VRCamera;
+            }
+        }
+
+        private static Image privacyScreen;
+        private static VRGlove _leftGlove;
+        private static VRGlove _rightGlove;
+
+        internal static VRGlove leftGlove { 
+            get {
+                TryInitializeGloves();
+                return _leftGlove;
+            }
+        }
+        internal static VRGlove rightGlove
+        {
+            get
+            {
+                TryInitializeGloves();
+                return _rightGlove;
+            }
+        }
+
+        private static Transform _leftCursorAttach;
+        private static Transform _rightCursorAttach;
+        internal static Transform leftCursorAttach
+        {
+            get
+            {
+                if (!_leftCursorAttach) _leftCursorAttach = new GameObject("LeftCursorAttach").transform;
+                var controllerModel = FindLeftControllerRenderModel(out var center);
+                if (controllerModel)
+                {
+                    if (_leftCursorAttach.parent != controllerModel.parent)
+                    {
+                        _leftCursorAttach.parent = controllerModel.parent;
+                        _leftCursorAttach.localScale = Vector3.one;
+                        _leftCursorAttach.localRotation = Quaternion.identity;
+                    }
+                    _leftCursorAttach.position = center + controllerModel.TransformVector(Vector3.forward * 0.1f);
+                }
+                return _leftCursorAttach;
+            }
+        }
+        internal static Transform rightCursorAttach
+        {
+            get
+            {
+                if (!_rightCursorAttach) _rightCursorAttach = new GameObject("RightCursorAttach").transform;
+                var controllerModel = FindRightControllerRenderModel(out var center);
+                if (controllerModel)
+                {
+                    if (_rightCursorAttach.parent != controllerModel.parent)
+                    {
+                        _rightCursorAttach.parent = controllerModel.parent;
+                        _rightCursorAttach.localScale = Vector3.one;
+                        _rightCursorAttach.localRotation = Quaternion.identity;
+                    }
+                    _rightCursorAttach.position = center + controllerModel.TransformVector(Vector3.forward * 0.125f);
+                }
+                return _rightCursorAttach;
+            }
+        }
+
+        private static RadialMenu _leftRadialMenu;
+        private static RadialMenu _rightRadialMenu;
+        internal static RadialMenu leftRadialMenu {
+            get
+            {
+                if (!_leftRadialMenu)
+                {
+                    _leftRadialMenu = new GameObject("LeftRadialMenu").AddComponent<RadialMenu>();
+                    _leftRadialMenu.gameObject.SetActive(false);
+                }
+                _leftRadialMenu.hand = leftCursorAttach;
+                return _leftRadialMenu;
+            }
+        }
+        internal static RadialMenu rightRadialMenu
+        {
+            get
+            {
+                if (!_rightRadialMenu)
+                {
+                    _rightRadialMenu = new GameObject("RightRadialMenu").AddComponent<RadialMenu>();
+                    _rightRadialMenu.gameObject.SetActive(false);
+                }
+                _rightRadialMenu.hand = rightCursorAttach;
+                return _rightRadialMenu;
+            }
+        }
+
+        private static HandHeldToy _handHeldToy;
+        internal static HandHeldToy handHeldToy
+        {
+            get { return (_handHeldToy && _handHeldToy.gameObject) ? _handHeldToy : (_handHeldToy = new GameObject("BetterVRHandHeldToy").AddComponent<HandHeldToy>()); }
+        }
+
+        private static GaugeHitIndicator _gaugeHitIndicator;
+        internal static GaugeHitIndicator gaugeHitIndicator
+        {
+            get { return _gaugeHitIndicator ?? (_gaugeHitIndicator = new GaugeHitIndicator()); }
+        }
+
         /// Use an enum to get the correct hand
-                 /// </summary>
+        /// </summary>
         internal static GameObject GetHand(VR_Hand hand)
         {
             if (hand == VR_Hand.left) return GetLeftHand();
@@ -49,31 +158,21 @@ namespace BetterVR
             return null;
         }
 
-
         /// <summary>
         /// Get The left hand controller vr game object
         /// </summary>
         internal static GameObject GetLeftHand()
         {
-            var leftHand = GameObject.Find("ViveControllers/Left");
-            if (leftHand == null) leftHand = GameObject.Find("Controller (left)");
-            if (leftHand == null) return null;
-
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetLeftHand id {leftHand.GetInstanceID()}");
-
-            return leftHand.gameObject;
+            var leftHand = GameObject.Find("ViveControllers/Left") ?? GameObject.Find("Controller (left)");
+            if (leftHand && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetLeftHand id {leftHand.GetInstanceID()}");
+            return leftHand;
         }
-
 
         internal static GameObject GetRightHand()
         {
-            var rightHand = GameObject.Find("ViveControllers/Right");
-            if (rightHand == null) rightHand = GameObject.Find("Controller (right)");
-            if (rightHand == null) return null;
-
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetRightHand id {rightHand.GetInstanceID()}");
-
-            return rightHand.gameObject;
+            var rightHand = GameObject.Find("ViveControllers/Right") ?? GameObject.Find("Controller (right)");
+            if (rightHand && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetRightHand id {rightHand.GetInstanceID()}");
+            return rightHand;
         }
 
         /// <summary>
@@ -82,10 +181,8 @@ namespace BetterVR
         internal static void Init(GameObject VROrigin)
         {
             BetterVRPluginHelper.VROrigin = VROrigin;
-            BetterVRPluginHelper.FixWorldScale();
-            BetterVRPluginHelper.UpdatePrivacyScreen();
+            FixWorldScale();
         }
-
 
         /// <summary>
         /// Enlarge the VR camera, to make the world appear to shrink by xx%
@@ -93,10 +190,8 @@ namespace BetterVR
         internal static void FixWorldScale(bool enable = true)
         {
             var viveRig = GameObject.Find("ViveRig");
-            if (viveRig != null)
-            {
-                viveRig.transform.localScale = Vector3.one * (enable ? BetterVRPlugin.PlayerScale : 1);
-            }
+            if (viveRig == null) return;
+            viveRig.transform.localScale = Vector3.one * (enable ? BetterVRPlugin.PlayerScale : 1);
         }
 
         // Moves VR camera to the player's head.
@@ -115,34 +210,118 @@ namespace BetterVR
             VRSettingUI.CameraInitAction?.Invoke();
         }
 
-        private static void LoadGloves()
+        internal static void CyclePlayerPDisplayMode()
         {
-            if (gloves != null) return;
-            var glovesPrefab = AssetBundleManager.LoadAssetBundle(AssetBundleNames.Chara00Mo_Gloves_00)?.Bundle?.LoadAsset<GameObject>(
-                "assets/illusion/assetbundle/prefabs/chara/male/00/mo_gloves_00/p_cm_glove_gunte.prefab");
-            if (!glovesPrefab) return;
-            gloves = GameObject.Instantiate(glovesPrefab);
-            gloves.GetComponentInChildren<SkinnedMeshRenderer>()?.GetOrAddComponent<SilhouetteMaterialSetter>();
+            // Sync display mode before changing it.
+            if (!Manager.Config.HData.Son) pDisplayMode = 0;
+            // Cycle player part display mode.
+            pDisplayMode = (pDisplayMode + 1) % 3;
+            // Toggle player part visibility.
+            UpdatePDisplay();
+            UpdatePlayerColliderActivity();
         }
 
-        public static GameObject GetLeftGlove()
+        internal static void UpdatePlayerColliderActivity()
         {
-            LoadGloves();
-            if (gloves == null) return null;
-            var glove = gloves.transform.FindLoop("cf_J_ArmLow01_L")?.gameObject;
-            if (!glove) return null;
-            glove.GetOrAddComponent<VRControllerInput.FingerPoseUpdater>().Init(HandRole.LeftHand);
-            return glove;
+            var player = BetterVRPlugin.GetPlayer();
+            if (player == null) return;
+            var colliders = player.objTop.GetComponentsInChildren<DynamicBoneCollider>();
+            foreach (var collider in colliders)
+            {
+                if (HAND_NAME_MATCHER.IsMatch(collider.name))
+                {
+                    collider.enabled = Manager.Config.HData.Visible;
+                }
+                else if (P_NAME_MATCHER.IsMatch(collider.name))
+                {
+                    collider.enabled = Manager.Config.HData.Son;
+                }
+            }
         }
 
-        public static GameObject GetRightGlove()
+        private static void UpdatePDisplay()
         {
-            LoadGloves();
-            if (gloves == null) return null;
-            var glove = gloves.transform.FindLoop("cf_J_ArmLow01_R")?.gameObject;
-            if (!glove) return null;
-            glove.GetOrAddComponent<VRControllerInput.FingerPoseUpdater>().Init(HandRole.RightHand, -1);
-            return glove;
+            Manager.Config.HData.Son = (pDisplayMode != 0);
+
+            var player = BetterVRPlugin.GetPlayer();
+            if (!player || !player.loadEnd) return;
+
+            bool shouldUseSimpleP = Manager.Config.HData.Son && pDisplayMode == 2;
+            bool shouldUseRegularP = Manager.Config.HData.Son && pDisplayMode == 1;
+
+            var simpleBodyEtc = player.cmpSimpleBody?.targetEtc;
+            GameObject simpleBody = simpleBodyEtc?.objBody;
+            if (simplePClone != null)
+            {
+                if (!shouldUseSimpleP || simpleBody == null || simplePClone.transform.parent != simpleBody.transform.parent)
+                {
+                    GameObject.Destroy(simplePClone);
+                    simplePClone = null;
+                }
+
+            }
+
+            if (shouldUseSimpleP && simplePClone == null)
+            {
+                GameObject simpleP = simpleBodyEtc?.objDanTop;
+                if (simpleBody && simpleP)
+                {
+                    simplePClone = GameObject.Instantiate(simpleP, simpleP.transform.parent);
+                    simplePClone.transform.SetPositionAndRotation(simpleP.transform.position, simpleP.transform.rotation);
+                    simplePClone.transform.localScale = simpleP.transform.localScale;
+                    // Reparent so that it is a sibling instead of a child of simpleBody and
+                    // can be displayed even if simpleBody is hidden.
+                    simplePClone.transform.SetParent(simpleBody.transform.parent, worldPositionStays: true);
+                    var renderers = simplePClone.GetComponentsInChildren<SkinnedMeshRenderer>();
+                    foreach (var renderer in renderers)
+                    {
+                        renderer.enabled = true;
+                        renderer.GetOrAddComponent<SilhouetteMaterialSetter>();
+                    }
+                }
+            }
+
+            simplePClone?.SetActive(shouldUseSimpleP);
+
+            // Hide the original part now that there is a clone.
+            var tamaRenderer = simpleBodyEtc?.objDanTama?.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (tamaRenderer) tamaRenderer.enabled = false;
+
+            var saoRenderer = simpleBodyEtc?.objDanSao?.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (saoRenderer) saoRenderer.enabled = false;
+
+            var regularBodyEtc = player.cmpBody?.targetEtc;
+            if (regularBodyEtc != null)
+            {
+                regularBodyEtc.objMNPB?.SetActive(shouldUseRegularP);
+                regularBodyEtc.objDanTop?.SetActive(shouldUseRegularP);
+                regularBodyEtc.objDanSao?.SetActive(shouldUseRegularP);
+                regularBodyEtc.objDanTama?.SetActive(shouldUseRegularP);
+            }
+        }
+
+        internal static void FinishH()
+        {
+            var fCtrl = Singleton<HSceneFlagCtrl>.Instance;
+            var sprite = Singleton<HSceneSprite>.Instance;
+            var anim = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetProcBase();
+            if (!fCtrl || !sprite || anim == null || fCtrl.loopType < 0) return;
+
+            if (fCtrl.loopType == 0 ||
+                anim is Aibu || anim is Houshi || anim is Spnking || anim is Masturbation || anim is Peeping || anim is Les)
+            {
+                sprite.OnClickFinish();
+            }
+            else
+            {
+                sprite.OnClickFinishSame();
+            }
+        }
+
+        internal static void TryInitializeGloves()
+        {
+            if (!_leftGlove) _leftGlove = VRGlove.CreateLeftGlove();
+            if (!_rightGlove) _rightGlove = VRGlove.CreateRightGlove();
         }
 
         internal static bool LeftHandTriggerPress()
@@ -165,9 +344,10 @@ namespace BetterVR
             return ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip);
         }
 
-        internal static void UpdatePrivacyScreen()
+        internal static void UpdatePrivacyScreen(Color? color = null)
         {
-            EnsurePrivacyScreen().SetActive(BetterVRPlugin.UsePrivacyScreen.Value);
+            EnsurePrivacyScreen().gameObject.SetActive(BetterVRPlugin.UsePrivacyScreen.Value);
+            if (color != null) privacyScreen.color = (Color) color;
         }
 
         internal static Vector2 GetRightHandPadStickCombinedOutput()
@@ -176,6 +356,16 @@ namespace BetterVR
             output.x += ViveInput.GetAxisEx<HandRole>(HandRole.RightHand, ControllerAxis.JoystickX);
             output.y += ViveInput.GetAxisEx<HandRole>(HandRole.RightHand, ControllerAxis.JoystickY);
             return output;
+        }
+
+        internal static Transform FindLeftControllerRenderModel(out Vector3 center)
+        {
+            return FindControllerRenderModel(GetLeftHand(), out center);
+        }
+
+        internal static Transform FindRightControllerRenderModel(out Vector3 center)
+        {
+            return FindControllerRenderModel(GetRightHand(), out center);
         }
 
         internal static Transform FindControllerRenderModel(GameObject hand, out Vector3 center)
@@ -200,109 +390,35 @@ namespace BetterVR
             UpdateControllerVisibilty(FindControllerRenderModel(GetRightHand(), out var rCenter));
         }
 
-        internal static void UpdateHandsVisibility()
-        {
-            UpdateHandVisibility(BetterVRPluginHelper.GetLeftHand(), ref leftGlove);
-            UpdateHandVisibility(BetterVRPluginHelper.GetRightHand(), ref rightGlove);
-        }
-
         private static void UpdateControllerVisibilty(Transform renderModel)
         {
             if (!renderModel) return;
 
             bool shouldShowController =
-                leftGlove == null || !leftGlove.activeSelf ||
-                rightGlove == null || !rightGlove.activeSelf ||
-                (Manager.Config.HData.Visible && !Manager.Config.HData.SimpleBody) ||
-                !BetterVRPlugin.GetPlayer();
+                !VRGlove.isShowingGloves ||
+                BetterVRPlugin.HandDisplay.Value == "Controllers" ||
+                BetterVRPlugin.HandDisplay.Value == "GlovesAndControllers";
             
             var renderers = renderModel.GetComponentsInChildren<MeshRenderer>();
-            if (renderers == null) return;
-            
             foreach (var renderer in renderers) renderer.enabled = shouldShowController;
         }
 
-        private static void UpdateHandVisibility(GameObject hand, ref GameObject glove)
-        {
-            Transform renderModel = BetterVRPluginHelper.FindControllerRenderModel(hand, out Vector3 center);
-            if (glove != null)
-            {
-                if (renderModel == null || glove.gameObject == null) glove = null;
-            }
-
-            if (glove == null && renderModel != null)
-            {
-                glove = hand.name.Contains("ight") ? GetRightGlove() : GetLeftGlove();
-                if (glove)
-                {
-                    glove.name = hand.name + "_simpleGlove";
-                }
-                else
-                {
-                    glove = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    glove.GetOrAddComponent<MeshRenderer>();
-                    glove.AddComponent<SilhouetteMaterialSetter>();
-                    glove.name = hand.name + "_simpleSphere";
-                }
-                glove.gameObject.SetActive(false);
-                GameObject.DontDestroyOnLoad(glove.gameObject);
-            }
-
-            bool shouldShowHand = BetterVRPlugin.ShowHand.Value && glove != null && renderModel != null;
-            bool isShowingHand = glove != null && glove.activeSelf;
-
-            if (shouldShowHand != isShowingHand) UpdateControllerVisibilty(renderModel);
-
-            if (!glove) return;
-
-            glove.gameObject.SetActive(shouldShowHand);
-
-            if (shouldShowHand)
-            {
-                if (glove.transform.parent != renderModel.parent && !VRControllerInput.repositioningHand)
-                {
-                    glove.transform.parent = renderModel.parent;
-                }
-
-                if (glove.transform.parent != null)
-                {
-                    // The render model may have been changed by the system so the simple renderer may need to be repositioned too.
-                    bool isRightHand = glove.name.Contains("ight");
-                    Vector3 offsetFromCenter;
-                    if (glove.name == hand.name + "_simpleSphere")
-                    {
-                        glove.transform.localScale = new Vector3(0.04f, 0.06f, 0.09f);
-                        glove.transform.localRotation = Quaternion.identity;
-                        offsetFromCenter = (isRightHand ? Vector3.right : Vector3.left) * 0.04f;
-                    }
-                    else
-                    {
-                        glove.transform.localScale = Vector3.one * BetterVRPlugin.HandScale.Value;
-                        glove.transform.localRotation =
-                            isRightHand ? BetterVRPlugin.RightHandRotation.Value : BetterVRPlugin.LeftHandRotation.Value;
-                        offsetFromCenter = isRightHand ? BetterVRPlugin.RightHandOffset.Value : BetterVRPlugin.LeftHandOffset.Value;
-                    }
-                    glove.transform.position = center + renderModel.transform.TransformVector(offsetFromCenter);
-                }
-            }
-        }
-
-        private static GameObject EnsurePrivacyScreen() {
-            if (privacyScreen != null)
+        private static Image EnsurePrivacyScreen() {
+            if (privacyScreen && privacyScreen.gameObject && privacyScreen.transform.parent)
             {
                 return privacyScreen;
             }
             
-            privacyScreen = new GameObject("PrivacyMode");
-            Canvas privacyCanvas = privacyScreen.AddComponent<Canvas>();
+            Canvas privacyCanvas = new GameObject("PrivacyCanvas").AddComponent<Canvas>();
             privacyCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             privacyCanvas.sortingOrder = 30000;
-            GameObject privacyOverlay = new GameObject("Overlay");
-            privacyOverlay.transform.SetParent(privacyScreen.transform);
-            Image image = privacyOverlay.AddComponent<Image>();
-            image.rectTransform.sizeDelta = new Vector2((float)(Screen.width * 4), (float)(Screen.height * 4));
-            image.color = Color.black;
-            UnityEngine.Object.DontDestroyOnLoad(privacyScreen);
+            GameObject privacyOverlay = new GameObject("PrivacySreen");
+            privacyOverlay.transform.SetParent(privacyCanvas.transform);
+            privacyScreen = privacyOverlay.AddComponent<Image>();
+            privacyScreen.transform.SetParent(privacyCanvas.transform);
+            privacyScreen.rectTransform.sizeDelta = new Vector2((float)(Screen.width * 4), (float)(Screen.height * 4));
+            privacyScreen.color = Color.black;
+            Object.DontDestroyOnLoad(privacyCanvas.gameObject);
 
             return privacyScreen;
         }
@@ -325,7 +441,7 @@ namespace BetterVR
 
                 UpdateControllersVisibilty();
 
-                GameObject.Destroy(this);
+                Destroy(this);
             }
         }
     }
