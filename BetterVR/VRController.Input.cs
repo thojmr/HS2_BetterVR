@@ -1,16 +1,16 @@
-using BepInEx.Configuration;
-using UnityEngine;
+using TMPro;
 using HTC.UnityPlugin.Vive;
-using IllusionUtility.GetUtility;
+using System;
+using UnityEngine;
 
 namespace BetterVR
 {
     public static class VRControllerInput
     {
-
-        internal static ViveRoleProperty roleR = ViveRoleProperty.New(HandRole.RightHand);
-        internal static ViveRoleProperty roleL = ViveRoleProperty.New(HandRole.LeftHand);
-        private static bool isDraggingScale;
+        internal static ViveRoleProperty roleH { get; private set; } = ViveRoleProperty.New(DeviceRole.Hmd);
+        internal static ViveRoleProperty roleR { get; private set; } = ViveRoleProperty.New(HandRole.RightHand);
+        internal static ViveRoleProperty roleL { get; private set; } = ViveRoleProperty.New(HandRole.LeftHand);
+        internal static bool isDraggingScale { get; private set; }
         private static float scaleDraggingFactor;
         private static Vector3? leftHandPositionDuringGripMovement = null;
         private static Vector3? rightHandPositionDuringGripMovement = null;
@@ -20,6 +20,16 @@ namespace BetterVR
         private static Vector3? lastHandPositionDifference = null;
         private static Vector3? lastVrOriginPosition;
         private static Quaternion? lastVrOriginRotation;
+
+        private static TextMeshPro _scaleIndicator;
+        private static TextMeshPro scaleIndicator
+        {
+            get
+            {
+                if (!_scaleIndicator || !_scaleIndicator.gameObject) _scaleIndicator = CreateScaleIndicator();
+                return _scaleIndicator;
+            }
+        }
 
         public static bool repositioningHand { get; private set; }  = false;
 
@@ -31,6 +41,7 @@ namespace BetterVR
             if (!shouldDragScale)
             {
                 isDraggingScale = false;
+                scaleIndicator?.gameObject?.SetActive(false);
                 if (BetterVRPluginHelper.LeftHandGripPress()
                     && BetterVRPluginHelper.RightHandGripPress()
                     && ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey)
@@ -47,68 +58,15 @@ namespace BetterVR
             {
                 // Start dragging scale
                 isDraggingScale = true;
+                scaleIndicator?.gameObject?.SetActive(true);
                 scaleDraggingFactor = handDistance * BetterVRPlugin.PlayerScale;
                 return;
             }
 
-            BetterVRPlugin.PlayerScale = scaleDraggingFactor / handDistance;
-        }
+            float newScale = scaleDraggingFactor / handDistance;
+            scaleIndicator?.SetText("" + String.Format("{0:0.000}", newScale));
 
-        internal static void CheckInputForHandReposition() {
-            var leftHandOffset = BetterVRPlugin.LeftHandOffset;
-            var leftHandRotation = BetterVRPlugin.LeftHandRotation;
-            var rightHandOffset = BetterVRPlugin.RightHandOffset;
-            var rightHandRotation = BetterVRPlugin.RightHandRotation;
-            var leftHandRepositioning =
-                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.AKey) &&
-                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.BKey) &&
-                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Trigger);
-            var rightHandRepositioning =
-                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey) &&
-                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.BKey) &&
-                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Trigger);
-            repositioningHand = leftHandRepositioning || rightHandRepositioning;
-
-            if (BetterVRPluginHelper.leftGlove && BetterVRPluginHelper.leftGlove.activeInHierarchy)
-            {
-                UpdateHandTransform(
-                    BetterVRPluginHelper.leftGlove.transform,
-                    BetterVRPluginHelper.GetLeftHand(),
-                    leftHandRepositioning,
-                    ref leftHandOffset,
-                    ref leftHandRotation);
-            }
-
-            if (BetterVRPluginHelper.rightGlove && BetterVRPluginHelper.rightGlove.activeInHierarchy)
-            {
-                UpdateHandTransform(
-                BetterVRPluginHelper.rightGlove.transform,
-                BetterVRPluginHelper.GetRightHand(),
-                rightHandRepositioning,
-                ref rightHandOffset,
-                ref rightHandRotation);
-            }
-        }
-
-        private static void UpdateHandTransform(
-            Transform hand, GameObject controller, bool isRepositioning,
-            ref ConfigEntry<Vector3> offset, ref ConfigEntry<Quaternion> localRotation)
-        {
-            if (hand == null) return;
-
-            if (isRepositioning)
-            {
-                if (hand.parent != null) hand.SetParent(null, worldPositionStays: true);
-            }
-            else if (hand.parent == null)
-            {
-                var controllerRenderModel = BetterVRPluginHelper.FindControllerRenderModel(controller, out Vector3 center);
-                if (controllerRenderModel == null) return;
-                hand.SetParent(controllerRenderModel.parent);
-                localRotation.Value = hand.localRotation;
-                offset.Value = controllerRenderModel.InverseTransformVector(hand.position - center);
-                BetterVRPlugin.Logger.LogInfo("Set hand offset: " + hand.localRotation + " rotation: " + hand.localRotation.eulerAngles);
-            }
+            BetterVRPlugin.PlayerScale = newScale;
         }
 
         internal static void RecordVrOriginTransform()
@@ -272,102 +230,20 @@ namespace BetterVR
             return alternativeIsBetterFit ? alternativeCandidate : angularVelocity;
         }
 
-        internal class FingerPoseUpdater : MonoBehaviour
+        private static TextMeshPro CreateScaleIndicator()
         {
-            private HandRole handRole;
-            private float rotationFactor = 1;
-            private Transform thumb;
-            public Transform index { get; private set; }
-            public Transform middle { get; private set; }
-            public Transform ring { get; private set; }
-            private Transform pinky;
-
-            public DynamicBoneCollider indexCollider { get; private set; }
-
-            internal void Init(HandRole handRole, float rotationFactor = 1)
-            {
-                this.handRole = handRole;
-                this.rotationFactor = rotationFactor;
-            }
-
-            void Awake()
-            {
-                thumb = FindFirstMatchingTransform(transform, "umb");
-                index = FindFirstMatchingTransform(transform, "ndex");
-                middle = FindFirstMatchingTransform(transform, "iddle");
-                ring = FindFirstMatchingTransform(transform, "ing");
-                pinky = FindFirstMatchingTransform(transform, "ittle");
-
-                if (index) {
-                    indexCollider = new GameObject(name + "_indexCollider").AddComponent<DynamicBoneCollider>();
-                    indexCollider.m_Radius = 0.01f;
-                    indexCollider.m_Height = 0.075f;
-                    indexCollider.m_Direction = DynamicBoneColliderBase.Direction.X;
-                    var colliderParent = index.childCount > 0 ? index.GetChild(0) : index;
-                    if (colliderParent.childCount > 0) colliderParent = colliderParent.GetChild(0);
-                    indexCollider.transform.parent = colliderParent;
-                    indexCollider.transform.localPosition = Vector3.zero;
-                    indexCollider.transform.localRotation = Quaternion.identity;
-                }
-            }
-
-            void Update()
-            {
-                float thumbAngle = 35;
-                if (ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.AKeyTouch) ||
-                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.BkeyTouch) ||
-                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.PadTouch) ||
-                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.MenuTouch)) thumbAngle = 15;
-                if (thumb && thumb.childCount > 0) thumb.GetChild(0).localRotation = Quaternion.Euler(0, 0, thumbAngle * rotationFactor);
-
-                float indexCurl = ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.IndexCurl);
-                float middleCurl = ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.MiddleCurl);
-                float ringCurl = ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.RingCurl);
-                float pinkyCurl = ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.PinkyCurl);
-
-                if (indexCurl != 0 || middleCurl != 0 || ringCurl != 0 || pinkyCurl != 0)
-                {
-                    UpdateAngle(index, indexCurl * 35);
-                    UpdateAngle(middle, middleCurl * 60);
-                    UpdateAngle(ring, ringCurl * 60);
-                    UpdateAngle(pinky, pinkyCurl * 60);
-                    return;
-                }
-                
-                float indexAngle = 10;
-                if (ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.TriggerTouch)) indexAngle = 30;
-                indexAngle += ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.Trigger) * 5;
-                
-                float gripAngle = 10;
-                if (ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.TriggerTouch) ||
-                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.GripTouch) ||
-                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.CapSenseGripTouch)) gripAngle = 70;
-                gripAngle += ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.CapSenseGrip) * 3;
-
-                UpdateAngle(index, indexAngle);
-                UpdateAngle(middle, gripAngle);
-                UpdateAngle(ring, gripAngle * 1.15f);
-                UpdateAngle(pinky, gripAngle * 1.4f);
-            }
-
-            private void UpdateAngle(Transform finger, float angle)
-            {
-                if (finger == null) return;
-                finger.localRotation = Quaternion.Euler(0, 0, angle * rotationFactor);
-                if (finger.childCount > 0) UpdateAngle(finger.GetChild(0), angle * 1.0625f);
-            }
-
-            private static Transform FindFirstMatchingTransform(Transform transform, string partialName)
-            {
-                if (transform.name.Contains(partialName)) return transform;
-
-                for (int i = 0; i < transform.childCount; i++)
-                {
-                    Transform result = FindFirstMatchingTransform(transform.GetChild(i), partialName);
-                    if (result) return result;
-                }
-                return null;
-            }
+            var camera = BetterVRPluginHelper.VRCamera;
+            if (!camera) return null;
+            var textMesh =
+                new GameObject().AddComponent<Canvas>().gameObject.AddComponent<TextMeshPro>();
+            textMesh.transform.SetParent(camera.transform);
+            textMesh.transform.localPosition = new Vector3 (0, 0.25f, 0.75f);
+            textMesh.transform.localRotation = Quaternion.identity;
+            textMesh.transform.localScale = Vector3.one * 0.1f;
+            textMesh.fontSize = 16;
+            textMesh.color = Color.blue;
+            textMesh.alignment = TextAlignmentOptions.Center;
+            return textMesh;
         }
     }
 }
