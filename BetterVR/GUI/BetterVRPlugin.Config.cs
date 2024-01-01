@@ -9,6 +9,8 @@ namespace BetterVR
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
         public static ConfigEntry<float> ControllerColliderRadius { get; private set; }
         public static ConfigEntry<string> GestureStrip { get; private set; }
+        public static ConfigEntry<bool> UseHandSpeedForHSpeed { get; private set; }
+
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
         public static ConfigEntry<float> PlayerLogScale { get; private set; }
         public static ConfigEntry<string> SqueezeToTurn { get; private set; }
@@ -17,12 +19,12 @@ namespace BetterVR
         public static ConfigEntry<bool> MultipleRandomHeroine { get; private set; }
         public static ConfigEntry<bool> UsePrivacyScreen { get; private set; }
         public static ConfigEntry<bool> SkipTitleScene { get; private set; }
-        public static ConfigEntry<bool> ShowHand { get; private set; }
-        public static ConfigEntry<Vector3> LeftHandOffset { get; private set; }
-        public static ConfigEntry<Quaternion> LeftHandRotation { get; private set; }
-        public static ConfigEntry<Vector3> RightHandOffset { get; private set; }
-        public static ConfigEntry<Quaternion> RightHandRotation { get; private set; }
-        public static ConfigEntry<float> HandScale { get; private set; }
+        public static ConfigEntry<string> HandDisplay { get; private set; }
+        public static ConfigEntry<Vector3> LeftGloveOffset { get; private set; }
+        public static ConfigEntry<Quaternion> LeftGloveRotation { get; private set; }
+        public static ConfigEntry<Vector3> RightGloveOffset { get; private set; }
+        public static ConfigEntry<Quaternion> RightGloveRotation { get; private set; }
+        public static ConfigEntry<float> GloveScale { get; private set; }
 
         public static float PlayerScale {
             get { return Mathf.Pow(2, PlayerLogScale.Value); }
@@ -50,6 +52,10 @@ namespace BetterVR
                 new ConfigDescription(
                     "Enable holding trigger and dragging away to undress or holding trigger and dragging onto to dress",
                     new AcceptableValueList<string>(new string[] { "Disabled", "Left hand", "Right hand" })));
+
+            UseHandSpeedForHSpeed = Config.Bind<bool>(
+                "VR General", "Use Hand Speed For H Speed", true,
+                new ConfigDescription("Use hand movement speed for H speed when touching certain parts"));
 
             SqueezeToTurn = Config.Bind<string>(
                 "VR General", "Squeeze to Turn", "One-handed",
@@ -87,38 +93,39 @@ namespace BetterVR
                 "VR General", "Skip Title Scene", false,
                 new ConfigDescription("Skip title scene and go straight to the select scene on game start."));
 
-            ShowHand = Config.Bind<bool>(
-                "VR General", "Show Hand", true, new ConfigDescription("Show VR hands in game."));
+            HandDisplay = Config.Bind<string>(
+                "VR General", "Hand Display", "Gloves",
+                new ConfigDescription(
+                    "How the hands should be diplayed as in VR",
+                    new AcceptableValueList<string>(new string[] { "Gloves", "Controllers", "GlovesAndControllers" })));
 
-            LeftHandOffset = Config.Bind(
+            LeftGloveOffset = Config.Bind(
                 "VR General",
                 "Left Hand Offset",
                 new Vector3(-0.05f, 0.25f, -0.28f),
-                "Offset of left hand relative to controller center, press left trigger + right A + right B to adjust");
+                "Offset of left glove relative to controller center, use radial menu option on the other hand to start adjusting and press trigger to stop adjusting");
 
-            LeftHandRotation = Config.Bind(
+            LeftGloveRotation = Config.Bind(
                 "VR General",
                 "Left Hand Rotation",
                 Quaternion.Euler(315, 0, 90),
-                "Rotation of left hand relative to controller, press left trigger + right A + right B to adjust.");
+                "Rotation of left glove relative to controller, use radial menu option on the other hand to start adjusting and press trigger to stop adjusting");
 
-            RightHandOffset = Config.Bind(
+            RightGloveOffset = Config.Bind(
                 "VR General",
                 "Right Hand Offset",
                 new Vector3(0.05f, 0.25f, -0.28f),
-                "Offset of left hand relative to controller center, press right trigger + left A + left B to adjust."); ;
+                "Offset of right glove relative to controller center, use radial menu option on the other hand to start adjusting and press trigger to stop adjusting"); ;
 
-            RightHandRotation = Config.Bind(
+            RightGloveRotation = Config.Bind(
                 "VR General",
                 "Right Hand Rotation",
                 Quaternion.Euler(315, 0, -90),
-                "Rotation of left hand relative to controller, press right trigger + left A + left B to adjust.");
+                "Rotation of right glove relative to controller, use radial menu option on the other hand to start adjusting and press trigger to stop adjusting");
 
-            HandScale = Config.Bind<float>(
+            GloveScale = Config.Bind<float>(
                 "VR General", "Hand Scale", 0.14f,
-                 new ConfigDescription(
-                     "Scale of the VR hand",
-                     new AcceptableValueRange<float>(0.01f, 2f)));
+                 new ConfigDescription("Scale of the VR gloves",  new AcceptableValueRange<float>(0.01f, 2f)));
 
         }
 
