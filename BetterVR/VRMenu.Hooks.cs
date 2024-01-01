@@ -35,6 +35,7 @@ namespace BetterVR
             //Add Random button to GUI, next to optional button
             VRMenuRandom.AppendRandomButton(__instance);
             VRMenuRandom.VRSelectSceneStart();
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.gray);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GripMoveCrtl), "Start")]
@@ -48,6 +49,12 @@ namespace BetterVR
         }
 
         static bool FirstHSceneAnimationPending = true;
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HS2.TitleScene), "Start")]
+        internal static void TitleSceneStartPatch()
+        {
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
+        }
 
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), nameof(HScene.Start))]
         internal static void HSceneStartPatch()
@@ -97,6 +104,7 @@ namespace BetterVR
             bool shouldPlay = BetterVRPlugin.SkipTitleScene.Value && !hasStartedTitleSceneForFirstTime;
             hasStartedTitleSceneForFirstTime = true;
             if (shouldPlay) __instance.OnPlay();
+            BetterVRPluginHelper.UpdateControllersVisibilty();
         }
     }
 }
