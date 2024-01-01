@@ -136,6 +136,13 @@ namespace BetterVR
             }
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(AIChara.ChaControl), "LoadCharaFbxDataAsync")]
+        internal static void ChaControlLoadCharaFbxDataAsyncPostfix(AIChara.ChaControl __instance)
+        {
+            BetterVRPluginHelper.UpdateControllersVisibilty();
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
         internal static void SetImagePositionReporter(Illusion.Component.UI.ColorPicker.Info __instance, PointerEventData cursorPos)
         {
