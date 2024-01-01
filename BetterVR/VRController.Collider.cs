@@ -1,15 +1,16 @@
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace BetterVR
 {
 	public static class VRControllerCollider
 	{
-		private static readonly string[] INDEX_COLLIDING_BONE_PARTIAL_NAMES = new string[] { "agina", "okan" };
+		private static readonly Regex INDEX_COLLIDING_BONE_MATCHER = new Regex(@"agina|okan");
+		private static DynamicBoneCollider leftControllerCollider;
+		private static DynamicBoneCollider rightControllerCollider;
+		private static DynamicBoneCollider floorCollider;
+		private static DynamicBoneCollider mouthCollider;
 		internal static Transform characterForHeightReference;
-		internal static DynamicBoneCollider leftControllerCollider;
-		internal static DynamicBoneCollider rightControllerCollider;
-		internal static DynamicBoneCollider floorCollider;
-		internal static DynamicBoneCollider mouthCollider;
 
 		internal static void UpdateDynamicBoneColliders()
 		{
@@ -23,6 +24,7 @@ namespace BetterVR
 
 			UpdateControllerColliders(dynamicBones, dynamicBonesV2);
 			UpdateIndexColliders(dynamicBones, dynamicBonesV2);
+			UpdateHandHeldToyCollider(dynamicBones, dynamicBonesV2);
 			UpdateFloorCollider(dynamicBones, dynamicBonesV2);
 			UpdateMouthCollider(dynamicBones, dynamicBonesV2);
 		}
@@ -33,7 +35,7 @@ namespace BetterVR
 				ref leftControllerCollider,
 				"LeftControllerCollider",
 				BetterVRPluginHelper.GetLeftHand(),
-				BetterVRPluginHelper.leftGlove?.GetComponent<VRControllerInput.FingerPoseUpdater>(),
+				BetterVRPluginHelper.leftGlove?.GetComponent<FingerPoseUpdater>(),
 				-1,
 				dynamicBones,
 				dynamicBonesV2);
@@ -41,7 +43,7 @@ namespace BetterVR
 				ref rightControllerCollider,
 				"RightControllerCollider",
 				BetterVRPluginHelper.GetRightHand(),
-				BetterVRPluginHelper.rightGlove?.GetComponent<VRControllerInput.FingerPoseUpdater>(),
+				BetterVRPluginHelper.rightGlove?.GetComponent<FingerPoseUpdater>(),
 				1,
 				dynamicBones,
 				dynamicBonesV2);
@@ -49,7 +51,7 @@ namespace BetterVR
 
  		private static void UpdateControllerCollider(
 			ref DynamicBoneCollider collider, string name,
-			GameObject controller, VRControllerInput.FingerPoseUpdater fingerPoses, float lateralFactor,
+			GameObject controller, FingerPoseUpdater fingerPoses, float lateralFactor,
 			DynamicBone[] dynamicBones, DynamicBone_Ver02[] dynamicBonesV2)
         {
 			var renderModel = BetterVRPluginHelper.FindControllerRenderModel(controller, out Vector3 center);
@@ -63,16 +65,14 @@ namespace BetterVR
 
 			collider.m_Radius = BetterVRPlugin.ControllerColliderRadius.Value;
 			// A height too small will cause the collider to be ignored by some dynamic bones.
-			// Radius times 3 seems to be a good value for height.
-			collider.m_Height = BetterVRPlugin.ControllerColliderRadius.Value * 3;
+			collider.m_Height = BetterVRPlugin.ControllerColliderRadius.Value * 5;
 
 			if (collider.transform.parent != renderModel) collider.transform.parent = renderModel;
 
-			if (fingerPoses && fingerPoses.middle && fingerPoses.ring)
+			if (fingerPoses?.middle)
 			{
 				collider.transform.position =
-					Vector3.Lerp(fingerPoses.middle.position, fingerPoses.ring.position, 0.5f) +
-					renderModel.TransformVector(Vector3.forward * 0.005f);
+					fingerPoses.middle.position + renderModel.TransformVector(Vector3.forward * 0.005f);
 			}
 			else
 			{
@@ -90,11 +90,19 @@ namespace BetterVR
 			{
 				mouthCollider = new GameObject("MouthCollider").AddComponent<DynamicBoneCollider>();
 				mouthCollider.m_Direction = DynamicBoneColliderBase.Direction.Z;
+				Transform capsuleStart = new GameObject("MouthColliderCapsuleRear").transform;
+				Transform capsuleEnd = new GameObject("MouthColliderCapsuleFront").transform;
+				capsuleStart.parent = capsuleEnd.parent = mouthCollider.transform;
+				capsuleStart.localPosition = Vector3.back * 0.1f;
+				capsuleEnd.localPosition = Vector3.forward * 0.1f;
+				var h = mouthCollider.GetOrAddComponent<HSpeedGesture>();
+				h.capsuleStart = capsuleStart;
+				h.capsuleEnd = capsuleEnd;
+				h.roleProperty = VRControllerInput.roleH;
 			}
 
 			mouthCollider.m_Radius = BetterVRPlugin.ControllerColliderRadius.Value;
 			// A height too small will cause the collider to be ignored by some dynamic bones.
-			// Radius times 3 seems to be a good value for height.
 			mouthCollider.m_Height = mouthCollider.m_Radius * 3;
 
 			var camera = BetterVRPluginHelper.VRCamera;
@@ -136,25 +144,33 @@ namespace BetterVR
 
 		private static void UpdateIndexColliders(DynamicBone[] dynamicBones, DynamicBone_Ver02[] dynamicBonesV2)
 		{
-			var leftIndexCollider = BetterVRPluginHelper.leftGlove?.GetComponent<VRControllerInput.FingerPoseUpdater>()?.indexCollider;
-			if (leftIndexCollider)
+			if (VRGlove.isShowingGloves && BetterVRPluginHelper.leftGlove)
             {
-				AddColliderToDB(leftIndexCollider, dynamicBones, INDEX_COLLIDING_BONE_PARTIAL_NAMES);
-				AddColliderToDBv2(leftIndexCollider, dynamicBonesV2, INDEX_COLLIDING_BONE_PARTIAL_NAMES);
+				var leftIndexCollider = BetterVRPluginHelper.leftGlove.GetComponent<FingerPoseUpdater>()?.indexCollider;
+				AddColliderToDB(leftIndexCollider, dynamicBones, INDEX_COLLIDING_BONE_MATCHER);
+				AddColliderToDBv2(leftIndexCollider, dynamicBonesV2, INDEX_COLLIDING_BONE_MATCHER);
 			}
 
-			var rightIndexCollider = BetterVRPluginHelper.rightGlove?.GetComponent<VRControllerInput.FingerPoseUpdater>()?.indexCollider;
-			if (rightIndexCollider)
+			if (VRGlove.isShowingGloves && BetterVRPluginHelper.rightGlove)
             {
-				AddColliderToDB(rightIndexCollider, dynamicBones, INDEX_COLLIDING_BONE_PARTIAL_NAMES);
-				AddColliderToDBv2(rightIndexCollider, dynamicBonesV2, INDEX_COLLIDING_BONE_PARTIAL_NAMES);
+				var rightIndexCollider = BetterVRPluginHelper.rightGlove.GetComponent<FingerPoseUpdater>()?.indexCollider;
+				AddColliderToDB(rightIndexCollider, dynamicBones, INDEX_COLLIDING_BONE_MATCHER);
+				AddColliderToDBv2(rightIndexCollider, dynamicBonesV2, INDEX_COLLIDING_BONE_MATCHER);
 			}
+		}
+
+		private static void UpdateHandHeldToyCollider(DynamicBone[] dynamicBones, DynamicBone_Ver02[] dynamicBonesV2)
+		{
+			var collider = BetterVRPluginHelper.handHeldToy?.collider;
+			if (!collider || !collider.isActiveAndEnabled) return;
+			AddColliderToDB(collider, dynamicBones);
+			AddColliderToDBv2(collider, dynamicBonesV2);
 		}
 
 		/// <summary>
 		/// Links V2 dynamic bones to a controller collider
 		/// </summary>
-		internal static void AddColliderToDBv2(DynamicBoneCollider collider, DynamicBone_Ver02[] dynamicBones, string[] partialNamesToMatch = null)
+		internal static void AddColliderToDBv2(DynamicBoneCollider collider, DynamicBone_Ver02[] dynamicBones, Regex boneNameMatcher = null)
 		{
 			if (collider == null) return;
 			if (dynamicBones.Length == 0) return;
@@ -165,11 +181,10 @@ namespace BetterVR
 			for (int z = 0; z < dynamicBones.Length; z++)
 			{
 				//Check for existing interaction
-				if (!dynamicBones[z].Colliders.Contains(collider) && MatchesName(dynamicBones[z].name, partialNamesToMatch))
-				{
-					dynamicBones[z].Colliders.Add(collider);
-					newDBCount++;
-				}
+				if (dynamicBones[z].Colliders.Contains(collider)) return;
+				if (boneNameMatcher != null && !boneNameMatcher.IsMatch(dynamicBones[z].name)) return;
+				dynamicBones[z].Colliders.Add(collider);
+				newDBCount++;
 			}
 
 			if (newDBCount > 0 && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Linked {newDBCount} new V2 colliders");
@@ -178,7 +193,7 @@ namespace BetterVR
 		/// <summary>
 		/// Links V1 dynamic bones to a controller collider
 		/// </summary>
-		internal static void AddColliderToDB(DynamicBoneCollider collider, DynamicBone[] dynamicBones, string[] partialNamesToMatch = null)
+		internal static void AddColliderToDB(DynamicBoneCollider collider, DynamicBone[] dynamicBones, Regex boneNameMatcher = null)
 		{
 			if (collider == null) return;
 			if (dynamicBones.Length == 0) return;
@@ -189,21 +204,13 @@ namespace BetterVR
 			for (int z = 0; z < dynamicBones.Length; z++)
 			{
 				//Check for existing interaction
-				if (!dynamicBones[z].m_Colliders.Contains(collider) && MatchesName(dynamicBones[z].name, partialNamesToMatch))
-				{
-					dynamicBones[z].m_Colliders.Add(collider);
-					newDBCount++;
-				}
+				if (dynamicBones[z].m_Colliders.Contains(collider)) return;
+				if (boneNameMatcher != null && !boneNameMatcher.IsMatch(dynamicBones[z].name)) return;
+				dynamicBones[z].m_Colliders.Add(collider);
+				newDBCount++;
 			}
 
 			if (newDBCount > 0 && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" Linked {newDBCount} new V1 colliders");
-		}
-
-		private static bool MatchesName(string targetName, string[] partialNames)
-        {
-			if (partialNames == null) return true;
-			foreach (var partialName in partialNames) if (targetName.Contains(partialName)) return true;
-			return false;
 		}
 	}
 }
