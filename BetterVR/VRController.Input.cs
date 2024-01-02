@@ -31,8 +31,6 @@ namespace BetterVR
             }
         }
 
-        public static bool repositioningHand { get; private set; }  = false;
-
         internal static void CheckInputForSqueezeScaling()
         {
             bool shouldDragScale =
