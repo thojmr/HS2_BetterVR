@@ -28,7 +28,6 @@ namespace BetterVR
         {
             Logger = base.Logger;
             // DebugTools.logger = Logger;
-            VRControllerColliderHelper.pluginInstance = this;
 
             PluginConfigInit();
 
