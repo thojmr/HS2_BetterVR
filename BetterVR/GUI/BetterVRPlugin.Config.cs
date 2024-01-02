@@ -9,7 +9,7 @@ namespace BetterVR
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
         public static ConfigEntry<float> ControllerColliderRadius { get; private set; }
         public static ConfigEntry<string> GestureStrip { get; private set; }
-        public static ConfigEntry<bool> UseHandSpeedForHSpeed { get; private set; }
+        public static ConfigEntry<float> HandHSpeedSensitivity { get; private set; }
 
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
         public static ConfigEntry<float> PlayerLogScale { get; private set; }
@@ -53,9 +53,11 @@ namespace BetterVR
                     "Enable holding trigger and dragging away to undress or holding trigger and dragging onto to dress",
                     new AcceptableValueList<string>(new string[] { "Disabled", "Left hand", "Right hand" })));
 
-            UseHandSpeedForHSpeed = Config.Bind<bool>(
-                "VR General", "Use Hand Speed For H Speed", true,
-                new ConfigDescription("Use hand movement speed for H speed when touching certain parts"));
+            HandHSpeedSensitivity = Config.Bind<float>(
+                "VR General", "Hand H Speed Sensitivty", 3,
+                new ConfigDescription(
+                    "Speed sensitivy when using hand movement to control H speed when touching certain parts, set to zero to disable this feature",
+                    new AcceptableValueRange<float>(0f, 8f)));
 
             SqueezeToTurn = Config.Bind<string>(
                 "VR General", "Squeeze to Turn", "One-handed",
