@@ -190,11 +190,12 @@ namespace BetterVR
             if (index)
             {
                 indexCollider = new GameObject(name + "_indexCollider").AddComponent<DynamicBoneCollider>();
-                indexCollider.m_Radius = 0.01f;
-                indexCollider.m_Height = 0.15f;
+                indexCollider.m_Radius = 0.03125f;
+                indexCollider.m_Height = 0.25f;
                 indexCollider.m_Direction = DynamicBoneColliderBase.Direction.X;
                 var colliderParent = index.childCount > 0 ? index.GetChild(0) : index;
                 if (colliderParent.childCount > 0) colliderParent = colliderParent.GetChild(0);
+                indexCollider.transform.localScale = Vector3.one;
                 indexCollider.transform.parent = colliderParent;
                 indexCollider.transform.localPosition = Vector3.zero;
                 indexCollider.transform.localRotation = Quaternion.identity;
