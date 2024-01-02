@@ -1,18 +1,38 @@
 # Introduction
-This repository contains the BetterVR plugin for `Honey Select 2 VR`, that adds a few quality of life enhancements.  
-Only tested in `Index/Vive` VR.
+Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a handful of bugs and add numerous motion control features and quality-of-life improvements.
 
 </br>
 
-No further plans for this.  Feel free to fork and modify. 
-
 ## Features
-- Adds colliders to your controllers, so you can boop.
-- Adds config option `Squeeze to Turn` to turn the camera when squeezing the grips and rotate your wrists.
-- Adds config option `Fix World Scale` to shrink the world size down just a little, since VR makes everything appear bigger than it should.
+- Adds colliders to controller (so you can boop), headset, toy, and floor
+- Adds config option `Squeeze to Turn` to turn the camera when squeezing the grips and triggers and rotating your wrists.
+- Adds config option `Fix World Scale` to change the world scale - adjustable through config or by holding both grips and both triggers and stretching.
+- Adds config option to allow vertical rotation.
 - Adds a `Random` button to the Character selection screen that will select a random female/male, and start the HScene.
     - You can select a map, and then hit random to use a specific map with random characters
     - (May not work in some cases) The config option `Multiple Heroine when Random`: will add two random heroine to the HScene
+- Adds radial menu with quick actions to recenter view, toggle player visibility, move onto next H stage, etc.
+    - Long press A or X to activate radial menu
+    - Move hand to select quick actions
+    - Press trigger or close radial menu to perform quick actions
+- Adds feature of using hand movement to dress/undress.
+    - Press down trigger close to cloth, hold trigger and drag away to undress
+    - Press down trigger some distance away from character, hold trigger and drag onto character to dress
+- Adds option to display VR controllers as hands/gloves in VR.
+    - If enabled, use radial menu quick action to start adjusting VR hand pose of the other hand
+    - Hold either grip to pause adjustment and have the VR glove move with controller
+    - Press either trigger to finish adjustment
+- Adds a hand-held toy that can be toggled on in the radial menu
+    - Use radial menu to toggle it again to change it into silhouette mode
+- Adds feature of using hand movement to adjust H speed.
+    - Start H animation regularly using controller pad/stick first
+    - Move hand, mouth, or toy close to certain body parts and start moving
+    - Look for a heart icon that may show up which indicates pleasure gauge hit
+- Adds option skip title scene on game start and go straight to select scene.
+- Partially fixes the non-interactable silhouette palette in game settings.
+- Fixes the bug of vanilla game not detecting thumb stick input on some platforms.
+- Fixes the bug of vanilla game resets camera when changing animation even if the camera initialization option is toggled off.
+- Fixes the bug that all animations are frozen after opening mod config dialog and closing game settings dialog sometimmes
 
 
 ## How to install
