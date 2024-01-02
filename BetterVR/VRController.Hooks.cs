@@ -159,9 +159,11 @@ namespace BetterVR
                 dummyRtHolder.transform.localPosition = Vector3.zero;
                 dummyRtHolder.transform.localRotation = Quaternion.identity;
                 RectTransform newDummyRt = dummyRtHolder.AddComponent<RectTransform>();
-                newDummyRt.position = new Vector3(-80, -80, 0);
-                newDummyRt.sizeDelta = new Vector2(160, 160);
+                newDummyRt.anchorMin = newDummyRt.anchorMax = Vector2.zero;
+                newDummyRt.offsetMin = Vector2.one * -0.5f;
+                newDummyRt.offsetMax = Vector2.one * 0.5f;
                 dummyRtField.SetValue(__instance, newDummyRt);
+                BetterVRPlugin.Logger.LogInfo("Added dummyRt to " + __instance.name + " to fix color picker " + dummyRt.rect);
             }
         }
     }
