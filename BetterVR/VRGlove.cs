@@ -29,6 +29,7 @@ namespace BetterVR
 
         internal void StartRepositioning()
         {
+            if (!isShowingGloves) return;
             isRepositioning = true;
         }
 
