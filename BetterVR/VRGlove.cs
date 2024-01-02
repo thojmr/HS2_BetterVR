@@ -155,7 +155,7 @@ namespace BetterVR
             hSpeedGesture.roleProperty = handRole == HandRole.LeftHand ? VRControllerInput.roleL : VRControllerInput.roleR;
             hSpeedGesture.capsuleStart = fingerPoses.ring;
             hSpeedGesture.capsuleEnd = fingerPoses.index;
-            hSpeedGesture.radius = BetterVRPlugin.ControllerColliderRadius.Value;
+            hSpeedGesture.activationRadius = BetterVRPlugin.ControllerColliderRadius.Value;
             return glove;
         }
     }
