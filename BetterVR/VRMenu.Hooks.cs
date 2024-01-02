@@ -1,6 +1,7 @@
 using HarmonyLib;
 using HS2VR;
 using Manager;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -76,20 +77,26 @@ namespace BetterVR
             {
                 return;
             }
-            
+
             VRControllerInput.RecordVrOriginTransform();
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), nameof(HScene.ChangeAnimation))]
+        internal static void ChangeAnimationPostfix()
+        {
+            VRControllerCollider.UpdateDynamicBoneColliders();
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetClothStateStartMotion")]
         internal static bool SetClothStateStartMotionPatch()
         {
-            return false;            
+            return false;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(VRSettingUI), "Start")]
         internal static void FindResetViewButton(VRSettingUI __instance)
         {
-            Button recenterButton = (Button) typeof(VRSettingUI).GetField("btnRecenter", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            Button recenterButton = (Button)typeof(VRSettingUI).GetField("btnRecenter", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
             if (recenterButton != null)
             {
                 BetterVRPluginHelper.recenterVR = recenterButton.onClick;
@@ -105,6 +112,29 @@ namespace BetterVR
             hasStartedTitleSceneForFirstTime = true;
             if (shouldPlay) __instance.OnPlay();
             BetterVRPluginHelper.UpdateControllersVisibilty();
+        }
+
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSceneManager.HSceneTables), "LoadAnimationFileName")]
+        internal static void PositionUnlockPatch(HSceneManager.HSceneTables __instance)
+        {
+            if (!BetterVRPlugin.UnlockAllPositions.Value || __instance.lstAnimInfo == null) return;
+            foreach (var infos in __instance.lstAnimInfo)
+            {
+                if (infos == null) continue;
+                foreach (var info in infos)
+                {
+                    if (info == null || info.nStatePtns == null) continue;
+                    for (int i = 0; i < 7; i++) if (!info.nStatePtns.Contains(i)) info.nStatePtns.Add(i);
+                    BetterVRPlugin.Logger.LogInfo("Unlocked position: " + info.nameAnimation);
+                }
+            }
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "CheckStartBase")]
+        internal static void CheckStartBasePrefix()
+        {
+            PositionUnlockPatch(HSceneManager.HResourceTables);
         }
     }
 }
