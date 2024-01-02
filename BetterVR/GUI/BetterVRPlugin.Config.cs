@@ -19,6 +19,7 @@ namespace BetterVR
         public static ConfigEntry<bool> MultipleRandomHeroine { get; private set; }
         public static ConfigEntry<bool> UsePrivacyScreen { get; private set; }
         public static ConfigEntry<bool> SkipTitleScene { get; private set; }
+        public static ConfigEntry<bool> UnlockAllPositions { get; private set; }
         public static ConfigEntry<string> HandDisplay { get; private set; }
         public static ConfigEntry<Vector3> LeftGloveOffset { get; private set; }
         public static ConfigEntry<Quaternion> LeftGloveRotation { get; private set; }
@@ -39,7 +40,6 @@ namespace BetterVR
 
             EnableControllerColliders = Config.Bind<bool>("VR General", "Enable Controller Colliders (boop!)", true, 
                 "Allows collision of VR controllers with all dynamic bones");
-            EnableControllerColliders.SettingChanged += EnableControllerColliders_SettingsChanged;
 
             ControllerColliderRadius = Config.Bind<float>(
                 "VR General", "Controller Collider Radius", 0.09f,
@@ -95,6 +95,9 @@ namespace BetterVR
                 "VR General", "Skip Title Scene", false,
                 new ConfigDescription("Skip title scene and go straight to the select scene on game start."));
 
+            UnlockAllPositions = Config.Bind<bool>(
+                "VR General", "Unlock all positions", true, new ConfigDescription("Unlock all positions regardless of character status"));
+
             HandDisplay = Config.Bind<string>(
                 "VR General", "Hand Display", "Gloves",
                 new ConfigDescription(
@@ -129,21 +132,6 @@ namespace BetterVR
                 "VR General", "Hand Scale", 0.14f,
                  new ConfigDescription("Scale of the VR gloves",  new AcceptableValueRange<float>(0.01f, 2f)));
 
-        }
-
-        /// <summary>
-        /// On config options changed by user, trigger stuff
-        /// </summary>
-        internal void EnableControllerColliders_SettingsChanged(object sender, System.EventArgs e) 
-        {
-            if (!EnableControllerColliders.Value) 
-            {            
-                VRControllerColliderHelper.StopHelperCoroutine();                                      
-            } 
-            else 
-            {                
-                VRControllerColliderHelper.TriggerHelperCoroutine();
-            }
         }
 
         // internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
