@@ -99,6 +99,7 @@ namespace BetterVR
 				h.capsuleStart = capsuleStart;
 				h.capsuleEnd = capsuleEnd;
 				h.roleProperty = VRControllerInput.roleH;
+				h.sensitivityMultiplier = 3;
 			}
 
 			mouthCollider.m_Radius = BetterVRPlugin.ControllerColliderRadius.Value;
