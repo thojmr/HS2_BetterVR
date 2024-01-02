@@ -32,9 +32,6 @@ namespace BetterVR
 
             PluginConfigInit();
 
-            //Set up game mode detectors to start certain logic when loading into main game
-            VRControllerColliderHelper.TriggerHelperCoroutine();
-
             //Harmony init.  It's magic!
             Harmony harmony_controller = new Harmony(GUID + "_controller");                        
             VRControllerHooks.InitHooks(harmony_controller, this);
@@ -130,31 +127,34 @@ namespace BetterVR
                 case 0:
                     BetterVRPluginHelper.handHeldToy.CycleMode(handRole == HandRole.RightHand);
                     BetterVRPluginHelper.UpdateControllersVisibilty();
+                    VRControllerCollider.UpdateDynamicBoneColliders();
+                    break;
+                case 1:
+                    VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 2:
                     BetterVRPluginHelper.FinishH();
                     break;
                 case 3:
-                    if (isTriggerDown)
-                    {
-                        // Reset scale
-                        PlayerLogScale.Value = (float)PlayerLogScale.DefaultValue;
-                    }
+                    if (isTriggerDown) VRControllerInput.ResetWorldScale();
                     break;
                 case 4:
                     BetterVRPluginHelper.CyclePlayerPDisplayMode();
+                    VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 5:
                     if (isTriggerDown)
                     {
                         BetterVRPluginHelper.ResetView();
                         BetterVRPluginHelper.UpdateControllersVisibilty();
+                        VRControllerCollider.UpdateDynamicBoneColliders();
                     }
                     break;
                 case 6:
                     // Toggle player body visibility.
                     Manager.Config.HData.Visible = !Manager.Config.HData.Visible;
                     BetterVRPluginHelper.UpdatePlayerColliderActivity();
+                    VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 7:
                     if (handRole == HandRole.LeftHand) {
