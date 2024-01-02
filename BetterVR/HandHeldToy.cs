@@ -7,7 +7,8 @@ namespace BetterVR
     {
         private const float RADIUS = 0.15f;
         private const float HEIGHT = 3f;
-        private const float GRAB_RANGE = 0.5f;
+        private const float GRAB_RANGE = 0.125f;
+        private const float RECENTER_THRESHOLD = 0.5f;
 
         private int mode = 0;
         private GameObject simpleModel;
@@ -33,13 +34,22 @@ namespace BetterVR
 
             if (ViveInput.GetPressDownEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) && !VRControllerInput.isDraggingScale)
             {
-                AttachAndBringToRangeOf(BetterVRPluginHelper.FindLeftControllerRenderModel(out var center));
-                hSpeedGesture.roleProperty = VRControllerInput.roleL;
+                var controllerModel = BetterVRPluginHelper.FindLeftControllerRenderModel(out var center);
+                if (controllerModel != null & controllerModel.InverseTransformVector(transform.position - center).magnitude < GRAB_RANGE)
+                {
+                    hSpeedGesture.roleProperty = VRControllerInput.roleL;
+                    AttachAndBringToRangeOf(controllerModel);
+                }
             }
             else if (ViveInput.GetPressDownEx<HandRole>(HandRole.RightHand, ControllerButton.Grip) && !VRControllerInput.isDraggingScale)
             {
-                hSpeedGesture.roleProperty = VRControllerInput.roleR;
-                AttachAndBringToRangeOf(BetterVRPluginHelper.FindRightControllerRenderModel(out var center));
+                var controllerModel = BetterVRPluginHelper.FindRightControllerRenderModel(out var center);
+                if (controllerModel != null & controllerModel.InverseTransformVector(transform.position - center).magnitude < GRAB_RANGE)
+                {
+                    hSpeedGesture.roleProperty = VRControllerInput.roleR;
+                    AttachAndBringToRangeOf(controllerModel);
+                }
+               
             }
             else if (
                  VRControllerInput.isDraggingScale ||
@@ -161,7 +171,7 @@ namespace BetterVR
         private void AttachAndBringToRangeOf(Transform parent)
         {
             transform.SetParent(parent, worldPositionStays: true);
-            if (parent != null && transform.localPosition.magnitude > GRAB_RANGE)
+            if (parent != null && transform.localPosition.magnitude > RECENTER_THRESHOLD)
             {
                 transform.localPosition = Vector3.zero;
             }
