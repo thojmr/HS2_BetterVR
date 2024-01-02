@@ -141,6 +141,7 @@ namespace BetterVR
         {
             BetterVRPluginHelper.UpdateControllersVisibilty();
             BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
+            VRControllerCollider.UpdateDynamicBoneColliders();
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
