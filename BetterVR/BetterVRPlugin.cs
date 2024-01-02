@@ -12,7 +12,7 @@ namespace BetterVR
     public partial class BetterVRPlugin : BaseUnityPlugin 
     {
         public const string GUID = "BetterVR";
-        public const string Version = "0.2";
+        public const string Version = "0.4";
         internal static new ManualLogSource Logger { get; private set; }
 
 #if DEBUG
@@ -62,6 +62,14 @@ namespace BetterVR
             rightsHandStripUpdater?.CheckStrip(BetterVRPlugin.GestureStrip.Value == "Right hand");
 
             BetterVRPluginHelper.TryInitializeGloves();
+
+            if (ViveInput.GetPressDownEx<HandRole>(HandRole.LeftHand, ControllerButton.Trigger) ||
+                ViveInput.GetPressDownEx<HandRole>(HandRole.RightHand, ControllerButton.Trigger) &&
+                Time.timeScale == 0)
+            {
+                // Fix the bug that time scale becomes zero after opening BepInex config and closing game settings
+                Time.timeScale = 1;
+            }
 
             CheckRadialMenu(BetterVRPluginHelper.leftRadialMenu, HandRole.LeftHand);
             CheckRadialMenu(BetterVRPluginHelper.rightRadialMenu, HandRole.RightHand);
