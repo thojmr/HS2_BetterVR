@@ -80,6 +80,8 @@ namespace BetterVR
 					center + renderModel.TransformVector(new Vector3(0.01f * lateralFactor, 0, 0.005f));
 			}
 
+			collider.enabled = BetterVRPlugin.EnableControllerColliders.Value;
+
 			AddColliderToDB(collider, dynamicBones);
 			AddColliderToDBv2(collider, dynamicBonesV2);
 		}
@@ -112,6 +114,8 @@ namespace BetterVR
 			if (mouthCollider.transform.parent != camera.transform) mouthCollider.transform.parent = camera.transform;
 			mouthCollider.transform.localRotation = Quaternion.identity;
 			mouthCollider.transform.localPosition = new Vector3(0, -0.08f, 0.03f);
+
+			mouthCollider.enabled = BetterVRPlugin.EnableControllerColliders.Value;
 
 			AddColliderToDB(mouthCollider, dynamicBones);
 			AddColliderToDBv2(mouthCollider, dynamicBonesV2);
@@ -148,6 +152,7 @@ namespace BetterVR
 			if (VRGlove.isShowingGloves && BetterVRPluginHelper.leftGlove)
             {
 				var leftIndexCollider = BetterVRPluginHelper.leftGlove.GetComponent<FingerPoseUpdater>()?.indexCollider;
+				if (leftIndexCollider) leftIndexCollider.enabled = BetterVRPlugin.EnableControllerColliders.Value;
 				AddColliderToDB(leftIndexCollider, dynamicBones, INDEX_COLLIDING_BONE_MATCHER);
 				AddColliderToDBv2(leftIndexCollider, dynamicBonesV2, INDEX_COLLIDING_BONE_MATCHER);
 			}
@@ -155,6 +160,7 @@ namespace BetterVR
 			if (VRGlove.isShowingGloves && BetterVRPluginHelper.rightGlove)
             {
 				var rightIndexCollider = BetterVRPluginHelper.rightGlove.GetComponent<FingerPoseUpdater>()?.indexCollider;
+				if (rightIndexCollider) rightIndexCollider.enabled = BetterVRPlugin.EnableControllerColliders.Value;
 				AddColliderToDB(rightIndexCollider, dynamicBones, INDEX_COLLIDING_BONE_MATCHER);
 				AddColliderToDBv2(rightIndexCollider, dynamicBonesV2, INDEX_COLLIDING_BONE_MATCHER);
 			}
@@ -181,9 +187,13 @@ namespace BetterVR
 			//For each heroine dynamic bone, add controller collider
 			for (int z = 0; z < dynamicBones.Length; z++)
 			{
+				// var toLog = "Bone " + dynamicBones[z].name + " colliders: ";
+				// foreach (var c in dynamicBones[z].Colliders) toLog += c.name;
+				// BetterVRPlugin.Logger.LogInfo(toLog);
+                
 				//Check for existing interaction
-				if (dynamicBones[z].Colliders.Contains(collider)) return;
-				if (boneNameMatcher != null && !boneNameMatcher.IsMatch(dynamicBones[z].name)) return;
+				if (dynamicBones[z].Colliders.Contains(collider)) continue;
+				if (boneNameMatcher != null && !boneNameMatcher.IsMatch(dynamicBones[z].name)) continue;
 				dynamicBones[z].Colliders.Add(collider);
 				newDBCount++;
 			}
@@ -204,9 +214,13 @@ namespace BetterVR
 			//For each heroine dynamic bone, add controller collider
 			for (int z = 0; z < dynamicBones.Length; z++)
 			{
+				// var toLog = "Bone " + dynamicBones[z].name + " colliders: ";
+				// foreach (var c in dynamicBones[z].m_Colliders) toLog += c.name;
+				// BetterVRPlugin.Logger.LogInfo(toLog);
+
 				//Check for existing interaction
-				if (dynamicBones[z].m_Colliders.Contains(collider)) return;
-				if (boneNameMatcher != null && !boneNameMatcher.IsMatch(dynamicBones[z].name)) return;
+				if (dynamicBones[z].m_Colliders.Contains(collider)) continue;
+				if (boneNameMatcher != null && !boneNameMatcher.IsMatch(dynamicBones[z].name)) continue;
 				dynamicBones[z].m_Colliders.Add(collider);
 				newDBCount++;
 			}
