@@ -150,21 +150,19 @@ namespace BetterVR
             // var rt = (RectTransform)rtField.GetValue(__instance);
             var dummyRtField = typeof(Illusion.Component.UI.ColorPicker.Info).GetField("dummyRT", BindingFlags.NonPublic | BindingFlags.Instance);
             var dummyRt = (RectTransform)dummyRtField.GetValue(__instance);
-            if (!dummyRt)
-            {
-                // Some color pickers in the game is missing dummyRT and does not respond to cursor drag properly.
-                // Add dummyRT to fix it as needed.
-                GameObject dummyRtHolder = new GameObject();
-                dummyRtHolder.transform.parent = __instance.transform;
-                dummyRtHolder.transform.localPosition = Vector3.zero;
-                dummyRtHolder.transform.localRotation = Quaternion.identity;
-                RectTransform newDummyRt = dummyRtHolder.AddComponent<RectTransform>();
-                newDummyRt.anchorMin = newDummyRt.anchorMax = Vector2.zero;
-                newDummyRt.offsetMin = Vector2.one * -0.5f;
-                newDummyRt.offsetMax = Vector2.one * 0.5f;
-                dummyRtField.SetValue(__instance, newDummyRt);
-                BetterVRPlugin.Logger.LogInfo("Added dummyRt to " + __instance.name + " to fix color picker " + dummyRt.rect);
-            }
+            if (dummyRt != null) return;
+
+            // Some color pickers in the game is missing dummyRT and does not respond to cursor drag properly.
+            // Add dummyRT to fix it as needed.
+            dummyRt = new GameObject().AddComponent<RectTransform>();
+            dummyRt.transform.SetParent(__instance.transform);
+            dummyRt.transform.localPosition = Vector3.zero;
+            dummyRt.transform.localRotation = Quaternion.identity;
+            dummyRt.anchorMin = dummyRt.anchorMax = Vector2.zero;
+            dummyRt.offsetMin = Vector2.one * -0.5f;
+            dummyRt.offsetMax = Vector2.one * 0.5f;
+            dummyRtField.SetValue(__instance, dummyRt);
+            BetterVRPlugin.Logger.LogInfo("Added dummyRt to " + __instance.name + " to fix color picker " + dummyRt.rect);
         }
     }
 }
