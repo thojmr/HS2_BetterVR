@@ -1,7 +1,6 @@
 using HarmonyLib;
 using HS2VR;
 using Manager;
-using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
