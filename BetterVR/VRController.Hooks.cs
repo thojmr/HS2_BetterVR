@@ -143,12 +143,12 @@ namespace BetterVR
             BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
-        internal static void SetImagePositionReporter(Illusion.Component.UI.ColorPicker.Info __instance, PointerEventData cursorPos)
+        [HarmonyPrefix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
+        internal static void ColorPickerFix(Illusion.Component.UI.ColorPicker.Info __instance, PointerEventData cursorPos)
         {
-            // var rtField = typeof(Illusion.Component.UI.ColorPicker.Info).GetField("myRt", BindingFlags.NonPublic | BindingFlags.Instance);
-            // var rt = (RectTransform)rtField.GetValue(__instance);
-            var dummyRtField = typeof(Illusion.Component.UI.ColorPicker.Info).GetField("dummyRT", BindingFlags.NonPublic | BindingFlags.Instance);
+            var dummyRtField =
+                typeof(Illusion.Component.UI.ColorPicker.Info).GetField(
+                    "dummyRT", BindingFlags.NonPublic | BindingFlags.Instance);
             var dummyRt = (RectTransform)dummyRtField.GetValue(__instance);
             if (dummyRt != null) return;
 
