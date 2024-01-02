@@ -128,7 +128,7 @@ namespace BetterVR
         [HarmonyPrefix, HarmonyPatch(typeof(AIChara.ChaControl), "LoadCharaFbxDataAsync")]
         internal static void ChaControlLoadCharaFbxDataAsyncPrefix(AIChara.ChaControl __instance)
         {
-            __instance.GetOrAddComponent<StripColliderUpdater>().Init(__instance);
+            if (__instance.sex == 1) __instance.GetOrAddComponent<StripColliderRegistry>().Init(__instance);
             
             if (__instance.name.Contains("chaF_001"))
             {
