@@ -109,7 +109,7 @@ namespace BetterVR
             hSpeedGesture = gameObject.AddComponent<HSpeedGesture>();
             hSpeedGesture.capsuleStart = rearCap.transform;
             hSpeedGesture.capsuleEnd = frontCap.transform;
-            hSpeedGesture.radius = RADIUS;
+            hSpeedGesture.activationRadius = RADIUS;
         }
 
         private void TryCreateFullModel()
