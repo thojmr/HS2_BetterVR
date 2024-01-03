@@ -7,7 +7,7 @@ namespace BetterVR
     {
         private const float RADIUS = 0.15f;
         private const float HEIGHT = 3f;
-        private const float GRAB_RANGE = 0.125f;
+        private const float GRAB_RANGE = 0.25f;
         private const float RECENTER_THRESHOLD = 0.5f;
 
         private int mode = 0;
