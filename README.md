@@ -6,8 +6,13 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
 ## Features
 - Adds colliders to controller (so you can boop), headset, toy, and floor
 - Adds config option `Squeeze to Turn` to turn the camera when squeezing the grips and triggers and rotating your wrists.
-- Adds config option `Fix World Scale` to change the world scale - adjustable through config or by holding both grips and both triggers and stretching.
+    - One-handed mode: hold trigger and grip and rotate hand
+    - Two-handed mode: hold both grips and move hands like turning a wheel
+- Adds config option `Fix World Scale` to change the world scale.
+    - Can adjust the scale in config options
+    - Can also holding both grips and both triggers and stretch to adjust the scale
 - Adds config option to allow vertical rotation.
+    - "View reset" option in the radial menu will reset vertical rotation too
 - Adds a `Random` button to the Character selection screen that will select a random female/male, and start the HScene.
     - You can select a map, and then hit random to use a specific map with random characters
     - (May not work in some cases) The config option `Multiple Heroine when Random`: will add two random heroine to the HScene
@@ -24,16 +29,18 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
     - Press either trigger to finish adjustment
 - Adds a hand-held toy that can be toggled on in the radial menu
     - Use radial menu to toggle it again to change it into silhouette mode
+    - When holding it, press A or X to attach to it to body (approximately using camera position)
 - Adds feature of using hand movement to adjust H speed.
     - Start H animation regularly using controller pad/stick first
     - Move hand, mouth, or toy close to certain body parts and start moving
+    - Haptic feedback (if enabled) indicates that the this feature is in action
     - Look for a heart icon that may show up which indicates pleasure gauge hit
 - Adds option to skip title scene on game start and go straight to select scene.
 - Adds option to unlock all positions regardless of character state.
 - Fixes the bug of vanilla game not detecting thumb stick input on some platforms.
 - Fixes the bug of vanilla game resets camera when changing animation even if the camera initialization option is toggled off.
 - Fixes the non-interactable silhouette palette in game settings.
-- Fixes the bug that all animations are frozen after opening mod config dialog and closing game settings dialog sometimmes
+- Fixes the bug that all animations are frozen after opening mod config dialog and closing game settings dialog sometimmes.
 
 
 ## How to install
