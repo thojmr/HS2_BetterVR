@@ -5,13 +5,15 @@ namespace BetterVR
 {
     internal class GaugeHitIndicator
     {
+        private static readonly Color START_COLOR = new Color(0.5f, 0.25f, 0.25f);
+        private static readonly Color FINISH_COLOR = new Color(1, 0.125f, 0.125f);
         private float smoothGaugeHit = 0;
         private float acceleration;
         private Vector3 headIndicatorVelocity = Vector3.zero;
-        private GameObject _headIndicator = null;
-        private GameObject _leftHandIndicator = null;
-        private GameObject _rightHandIndicator = null;
-        private GameObject headIndicator
+        private TextMeshPro _headIndicator = null;
+        private TextMeshPro _leftHandIndicator = null;
+        private TextMeshPro _rightHandIndicator = null;
+        private TextMeshPro headIndicator
         {
             get
             {
@@ -19,7 +21,7 @@ namespace BetterVR
                 return _headIndicator;
             }
         }
-        private GameObject leftHandIndicator
+        private TextMeshPro leftHandIndicator
         {
             get
             {
@@ -27,7 +29,7 @@ namespace BetterVR
                 return _leftHandIndicator;
             }
         }
-        private GameObject rightHandIndicator
+        private TextMeshPro rightHandIndicator
         {
             get
             {
@@ -42,11 +44,11 @@ namespace BetterVR
             if (!leftHandIndicator || !rightHandIndicator || !headIndicator) return;
 
             smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, 1, ref acceleration, 0.125f);
-            leftHandIndicator.SetActive(true);
-            rightHandIndicator.SetActive(true);
-            headIndicator.SetActive(true);
+            leftHandIndicator.gameObject.SetActive(true);
+            rightHandIndicator.gameObject.SetActive(true);
+            headIndicator.gameObject.SetActive(true);
 
-            UpdateIndicatorSize();
+            UpdateIndicatorSizeAndColor();
             var camera = BetterVRPluginHelper.VRCamera;
             var vrOrigin = BetterVRPluginHelper.VROrigin;
             if (camera == null || vrOrigin == null) return;
@@ -72,7 +74,7 @@ namespace BetterVR
             if (IsGaugeHit()) return;
             if (!leftHandIndicator || !rightHandIndicator || !headIndicator) return;
 
-            if (!leftHandIndicator.activeSelf && !rightHandIndicator.activeSelf && !headIndicator.activeSelf)
+            if (!leftHandIndicator.isActiveAndEnabled && !rightHandIndicator.isActiveAndEnabled && !headIndicator.isActiveAndEnabled)
             {
                 smoothGaugeHit = 0;
                 return;
@@ -82,13 +84,13 @@ namespace BetterVR
             if (smoothGaugeHit < 0)
             {
                 smoothGaugeHit = 0;
-                headIndicator.SetActive(false);
-                leftHandIndicator.SetActive(false);
-                rightHandIndicator.SetActive(false);
+                headIndicator.gameObject.SetActive(false);
+                leftHandIndicator.gameObject.SetActive(false);
+                rightHandIndicator.gameObject.SetActive(false);
             }
             else
             {
-                UpdateIndicatorSize();
+                UpdateIndicatorSizeAndColor();
             }
         }
 
@@ -97,17 +99,31 @@ namespace BetterVR
             return Singleton<HSceneFlagCtrl>.Instance?.isGaugeHit ?? false;
         }
 
-        private void UpdateIndicatorSize()
+        private float GetFeelLevel()
         {
-            if (headIndicator) headIndicator.transform.localScale =
-                    Vector3.one * 0.03f * smoothGaugeHit;
-            if (leftHandIndicator) leftHandIndicator.transform.localScale =
-                    Vector3.one * 0.02f * smoothGaugeHit;
-            if (rightHandIndicator) rightHandIndicator.transform.localScale =
-                    Vector3.one * 0.02f * smoothGaugeHit;
+            return Singleton<HSceneFlagCtrl>.Instance?.feel_f ?? 0;
         }
 
-        private static GameObject CreateIndicator(Transform cursorAttach)
+        private void UpdateIndicatorSizeAndColor()
+        {
+            Color color = Color.Lerp(START_COLOR, FINISH_COLOR, GetFeelLevel());
+            if (headIndicator)
+            {
+                headIndicator.transform.localScale = Vector3.one * 0.03f * smoothGaugeHit;
+                headIndicator.color = color;
+            }
+            if (leftHandIndicator) {
+                leftHandIndicator.transform.localScale = Vector3.one * 0.02f * smoothGaugeHit;
+                leftHandIndicator.color = color;
+            }
+            if (rightHandIndicator)
+            {
+                rightHandIndicator.transform.localScale = Vector3.one * 0.02f * smoothGaugeHit;
+                rightHandIndicator.color = color;
+            }
+        }
+
+        private static TextMeshPro CreateIndicator(Transform cursorAttach)
         {
             if (!cursorAttach) return null;
             var textMesh =
@@ -118,7 +134,7 @@ namespace BetterVR
             textMesh.fontSize = 16;
             textMesh.color = new Color(1, 0.25f, 0.25f);
             textMesh.alignment = TextAlignmentOptions.Center;
-            return textMesh.gameObject;
+            return textMesh;
         }
     }
 }
