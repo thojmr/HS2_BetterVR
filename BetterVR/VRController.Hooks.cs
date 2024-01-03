@@ -58,36 +58,7 @@ namespace BetterVR
                 return true;
             }
 
-            if (BetterVRPlugin.SqueezeToTurn.Value == "One-handed")
-            {
-                // Completely delegate to mod logic for both rotation and locomotion.
-                return false;
-            }
-
-            if (BetterVRPlugin.SqueezeToTurn.Value == "Two-handed")
-            {
-                if (BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.RightHandGripPress())
-                {
-                    // Completely delegate to mod logic for both rotation and locomotion.
-                    return false;
-                }
-
-                if (BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress())
-                {
-                    // Only one grip is pressed, let vanilla game handle locomotion.
-                    return true;
-                }
-
-                if (BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress())
-                {
-                    // Only one grip is pressed, let vanilla game handle locomotion.
-                    return true;
-                }
-
-                return false;
-            }
-
-            return true;
+            return !BetterVRPlugin.IsOneHandedTurnEnabled() && !BetterVRPlugin.IsTwoHandedTurnEnabled();
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "GetAxis")]
@@ -142,6 +113,36 @@ namespace BetterVR
             BetterVRPluginHelper.UpdateControllersVisibilty();
             BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
             VRControllerCollider.UpdateDynamicBoneColliders();
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishInSide))]
+        internal static void HSceneFinishPatch()
+        {
+            pluginInstance.GetOrAddComponent<FinishHHaptic>().enabled = true;
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishOutSide))]
+        internal static void HSceneFinishPatchO()
+        {
+            HSceneFinishPatch();
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishVomit))]
+        internal static void HSceneFinishPatchV()
+        {
+            HSceneFinishPatch();
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishDrink))]
+        internal static void HSceneFinishPatchD()
+        {
+            HSceneFinishPatch();
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishSame))]
+        internal static void HSceneFinishPatchS()
+        {
+            HSceneFinishPatch();
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
