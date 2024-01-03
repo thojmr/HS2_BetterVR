@@ -18,8 +18,8 @@ namespace BetterVR
         internal float activationRadius = 0.25f;
         internal float deactivationDistance = 0.5f;
         internal float sensitivityMultiplier = 1;
+        internal Collider interactingCollider { get; private set; }
 
-        private Collider interactingCollider;
         private float smoothTargetSpeed = 0;
         private bool isTouching;
         private bool isColliderMild;
@@ -44,7 +44,8 @@ namespace BetterVR
             if (isTouching && hCtrl.loopType >= 0 && hCtrl.loopType <= 2 && hCtrl.speed > 0 && BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
             {
                 ViveInput.TriggerHapticVibration(
-                    roleProperty, frequency: hCtrl.isGaugeHit ? 60 : 35, amplitude: hCtrl.speed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value);
+                    roleProperty, frequency: hCtrl.isGaugeHit ? 60 : 35,
+                    amplitude: smoothTargetSpeed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value);
             }
 
             switch (hCtrl.loopType)
