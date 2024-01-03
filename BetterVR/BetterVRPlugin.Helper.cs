@@ -2,7 +2,6 @@ using HTC.UnityPlugin.Vive;
 using HS2VR;
 using IllusionUtility.GetUtility;
 using System.Text.RegularExpressions;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
@@ -36,6 +35,7 @@ namespace BetterVR
                 if (_VRCamera == null) _VRCamera = GameObject.Find("rCamera (eye)")?.GetComponent<Camera>();
                 if (_VRCamera == null) _VRCamera = GameObject.Find("rCamera")?.GetComponent<Camera>();
                 if (_VRCamera == null) _VRCamera = GameObject.Find("Camera")?.GetComponent<Camera>();
+                if (_VRCamera == null) _VRCamera = Camera.main;
                 if (_VRCamera == null)
                 {
                     BetterVRPlugin.Logger.LogWarning("VR Camera not found, may try again later");
@@ -302,20 +302,21 @@ namespace BetterVR
 
         internal static void FinishH()
         {
+            bool FinishedSameTime = TryFinishHSameTime();
+            if (!FinishedSameTime) Singleton<HSceneSprite>.Instance?.OnClickFinish();
+        }
+
+        internal static bool TryFinishHSameTime()
+        {
             var fCtrl = Singleton<HSceneFlagCtrl>.Instance;
             var sprite = Singleton<HSceneSprite>.Instance;
             var anim = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetProcBase();
-            if (!fCtrl || !sprite || anim == null || fCtrl.loopType < 0) return;
 
-            if (fCtrl.loopType == 0 ||
-                anim is Aibu || anim is Houshi || anim is Spnking || anim is Masturbation || anim is Peeping || anim is Les)
-            {
-                sprite.OnClickFinish();
-            }
-            else
-            {
-                sprite.OnClickFinishSame();
-            }
+            if (!fCtrl || !sprite || anim == null || fCtrl.loopType < 2) return false;
+            if (anim is Aibu || anim is Houshi || anim is Spnking || anim is Masturbation || anim is Peeping || anim is Les) return false;
+
+            sprite.OnClickFinishSame();
+            return true;
         }
 
         internal static void TryInitializeGloves()
