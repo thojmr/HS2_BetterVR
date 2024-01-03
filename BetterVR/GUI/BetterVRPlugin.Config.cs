@@ -11,6 +11,7 @@ namespace BetterVR
         public static ConfigEntry<string> GestureStrip { get; private set; }
         public static ConfigEntry<float> HandHSpeedSensitivity { get; private set; }
 
+        public static ConfigEntry<float> HapticFeedbackIntensity { get; private set; }
         public static ConfigEntry<float> SetVRControllerPointerAngle { get; private set; }
         public static ConfigEntry<float> PlayerLogScale { get; private set; }
         public static ConfigEntry<string> SqueezeToTurn { get; private set; }
@@ -58,6 +59,10 @@ namespace BetterVR
                 new ConfigDescription(
                     "Speed sensitivy when using hand movement to control H speed when touching certain parts, set to zero to disable this feature",
                     new AcceptableValueRange<float>(0f, 8f)));
+
+            HapticFeedbackIntensity = Config.Bind<float>(
+                "VR General", "Haptic Feedback Intensity", 0.125f,
+                new ConfigDescription("Haptic feedback intensity on controllers", new AcceptableValueRange<float>(0f, 1f)));
 
             SqueezeToTurn = Config.Bind<string>(
                 "VR General", "Squeeze to Turn", "One-handed",
@@ -138,6 +143,16 @@ namespace BetterVR
         // {
         //     VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
         // }
+
+        internal static bool IsTwoHandedTurnEnabled()
+        {
+            return SqueezeToTurn.Value == "Two-handed";
+        }
+
+        internal static bool IsOneHandedTurnEnabled()
+        {
+            return SqueezeToTurn.Value == "One-handed";
+        }
 
         internal void FixWorldSizeScale_SettingsChanged(object sender, System.EventArgs e) 
         {
