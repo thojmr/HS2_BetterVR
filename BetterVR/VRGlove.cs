@@ -204,12 +204,22 @@ namespace BetterVR
 
         void Update()
         {
-            float thumbAngle = 35;
-            if (ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.AKeyTouch) ||
-                ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.BkeyTouch) ||
-                ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.PadTouch) ||
-                ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.MenuTouch)) thumbAngle = 15;
-            if (thumb && thumb.childCount > 0) thumb.GetChild(0).localRotation = Quaternion.Euler(0, 0, thumbAngle * rotationFactor);
+            if (thumb && thumb.childCount > 0)
+            {
+                if (ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.AKeyTouch) ||
+                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.BkeyTouch) ||
+                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.PadTouch) ||
+                    ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.MenuTouch))
+                {
+                    thumb.localRotation = Quaternion.Euler(0, 0, 5 * rotationFactor);
+                    thumb.GetChild(0).localRotation = Quaternion.Euler(0, 0, 30 * rotationFactor);
+                }
+                else
+                {
+                    thumb.localRotation = Quaternion.Euler(0, 0, 20 * rotationFactor);
+                    thumb.GetChild(0).localRotation = Quaternion.Euler(0, 15 * rotationFactor, 35 * rotationFactor);
+                }
+            }
 
             float indexCurl = ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.IndexCurl);
             float middleCurl = ViveInput.GetAxisEx<HandRole>(handRole, ControllerAxis.MiddleCurl);
