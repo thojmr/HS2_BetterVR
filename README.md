@@ -10,7 +10,7 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
     - Two-handed mode: hold both grips and move hands like turning a wheel
 - Adds config option `Fix World Scale` to change the world scale.
     - Can adjust the scale in config options
-    - Can also holding both grips and both triggers and stretch to adjust the scale
+    - Can also hold both grips and both triggers and stretch to adjust the scale
 - Adds config option to allow vertical rotation.
     - "View reset" option in the radial menu will reset vertical rotation too
 - Adds a `Random` button to the Character selection screen that will select a random female/male, and start the HScene.
