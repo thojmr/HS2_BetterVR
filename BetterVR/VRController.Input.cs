@@ -10,19 +10,17 @@ namespace BetterVR
         internal static ViveRoleProperty roleH { get; private set; } = ViveRoleProperty.New(DeviceRole.Hmd);
         internal static ViveRoleProperty roleR { get; private set; } = ViveRoleProperty.New(HandRole.RightHand);
         internal static ViveRoleProperty roleL { get; private set; } = ViveRoleProperty.New(HandRole.LeftHand);
-        internal static bool isDraggingScale { get { return worldGrabScale != null && worldGrabScale.enabled; } }
-        private static Vector3? handMidpointDuringGripMovement = null;
-        private static Vector3? lastHandPositionDifference = null;
+        internal static bool isDraggingScale { get { return twoHandedWorldGrab != null && twoHandedWorldGrab.canScale; } }
         private static Vector3? lastVrOriginPosition;
         private static Quaternion? lastVrOriginRotation;
-        private static WorldGrabScale _worldGrabScale;
-        private static WorldGrabScale worldGrabScale {
+        private static TwoHandedWorldGrab _twoHandedWorldGrab;
+        private static TwoHandedWorldGrab twoHandedWorldGrab {
             get {
-                if (_worldGrabScale == null || _worldGrabScale.gameObject == null) {
-                    _worldGrabScale = new GameObject("WorldGrabScale").AddComponent<WorldGrabScale>();
-                    _worldGrabScale.enabled = false;
+                if (_twoHandedWorldGrab == null || _twoHandedWorldGrab.gameObject == null) {
+                    _twoHandedWorldGrab = new GameObject("WorldGrabScale").AddComponent<TwoHandedWorldGrab>();
+                    _twoHandedWorldGrab.enabled = false;
                 }
-                return _worldGrabScale;
+                return _twoHandedWorldGrab;
             }
         }
         internal static Vector3 handMidpointLocal
@@ -36,37 +34,6 @@ namespace BetterVR
             {
                 return Vector3.Distance(VivePose.GetPose(VRControllerInput.roleL).pos, VivePose.GetPose(VRControllerInput.roleR).pos);
             }
-        }
-
-        internal static void CheckInputForSqueezeScaling()
-        {
-            if (!worldGrabScale) return;
-
-            worldGrabScale.enabled =
-                BetterVRPlugin.FixWorldSizeScale.Value &&
-                BetterVRPluginHelper.LeftHandTriggerPress() && BetterVRPluginHelper.LeftHandGripPress() &&
-                BetterVRPluginHelper.RightHandTriggerPress() && BetterVRPluginHelper.RightHandGripPress();
-
-            if (!worldGrabScale.enabled &&
-                BetterVRPluginHelper.LeftHandGripPress() &&
-                BetterVRPluginHelper.RightHandGripPress() &&
-                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey) &&
-                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.AKey))
-            {
-                ResetWorldScale();
-            }
-        }
-
-        internal static void ResetWorldScale()
-        {
-            var vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
-            if (!vrOrigin) return;
-
-            var handMidpoint = vrOrigin.TransformPoint(handMidpointLocal);
-
-            BetterVRPlugin.PlayerLogScale.Value = (float)BetterVRPlugin.PlayerLogScale.DefaultValue;
-
-            RestoreHandMidpointWorldPosition(handMidpoint);
         }
 
         internal static void RecordVrOriginTransform()
@@ -112,72 +79,61 @@ namespace BetterVR
         }
 
         /// <summary>
-        /// When user squeezes the grip, turn the camera via wrists angular veolcity
+        /// Handles world scaling, rotation, and locomotion when user squeezes the grip
         /// </summary>
-        internal static void UpdateOneHandedMovements()
+        internal static void UpdateSqueezeMovement()
         {
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
             if (!vrOrigin) return;
 
-            bool leftHandGrabbing = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress();
-            bool rightHandGrabbing = BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress();
+            bool leftHandFullGrab = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress();
+            bool rightHandFullGrab = BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress();
+            bool bothGrips = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.RightHandGripPress();
+            
+            bool twoHandedTurn = BetterVRPlugin.IsTwoHandedTurnEnabled() && bothGrips;
+            bool shouldScale = leftHandFullGrab && rightHandFullGrab;
+
+            twoHandedWorldGrab.enabled = shouldScale || twoHandedTurn;
+            twoHandedWorldGrab.canScale = shouldScale;
+
+            bool allowOneHandedWorldGrab =
+                !twoHandedWorldGrab.enabled && (BetterVRPlugin.IsOneHandedTurnEnabled() || BetterVRPlugin.IsTwoHandedTurnEnabled());
 
             // Check right hand
             var rightControllerModel = BetterVRPluginHelper.FindRightControllerRenderModel(out var rCenter);
             if (rightControllerModel)
             {
-                rightControllerModel.GetOrAddComponent<WorldGrabReposition>().enabled = rightHandGrabbing && !leftHandGrabbing;
+                rightControllerModel.GetOrAddComponent<OneHandedWorldGrab>().enabled =
+                    rightHandFullGrab && !leftHandFullGrab && allowOneHandedWorldGrab;
             }
 
             // Check left hand
             var leftControllerModel = BetterVRPluginHelper.FindLeftControllerRenderModel(out var lCenter);
             if (leftControllerModel)
             {
-                leftControllerModel.GetOrAddComponent<WorldGrabReposition>().enabled = leftHandGrabbing && !rightHandGrabbing;
+                leftControllerModel.GetOrAddComponent<OneHandedWorldGrab>().enabled =
+                    leftHandFullGrab && !rightHandFullGrab && allowOneHandedWorldGrab;
+            }
+
+            if (!isDraggingScale && bothGrips &&
+                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.AKey) &&
+                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.AKey))
+            {
+                twoHandedWorldGrab.enabled = false;
+                ResetWorldScale();
             }
         }
 
-        /// <summary>
-        /// When user squeezes the grips, turn the camera via hand movements
-        /// </summary>
-        internal static void UpdateTwoHandedMovements()
+        internal static void ResetWorldScale()
         {
-            Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
-            if (vrOrigin == null) return;
+            var vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
+            if (!vrOrigin) return;
 
-            Vector3 currentLocalHandMidpoint = handMidpointLocal;
-            Vector3 handPositionDifference = VivePose.GetPose(roleR).pos - VivePose.GetPose(roleL).pos;
-            Quaternion localRotationDelta =
-                lastHandPositionDifference == null ?
-                Quaternion.identity :
-                Quaternion.FromToRotation(handPositionDifference, (Vector3)lastHandPositionDifference);
-            lastHandPositionDifference = handPositionDifference;
+            var handMidpoint = vrOrigin.TransformPoint(handMidpointLocal);
 
-            var shouldBeActive = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.RightHandGripPress();
+            BetterVRPlugin.PlayerLogScale.Value = (float)BetterVRPlugin.PlayerLogScale.DefaultValue;
 
-            if (!shouldBeActive)
-            {
-                handMidpointDuringGripMovement = null;
-                return;
-            }
-
-            if (handMidpointDuringGripMovement == null)
-            {
-                handMidpointDuringGripMovement = vrOrigin.TransformPoint(currentLocalHandMidpoint);
-                return;
-            }
-
-            if (BetterVRPlugin.AllowVerticalRotation.Value)
-            {
-                vrOrigin.rotation = vrOrigin.rotation * localRotationDelta;
-            }
-            else
-            {
-                vrOrigin.Rotate(0, localRotationDelta.eulerAngles.y, 0, Space.Self);
-            }
-
-            // Translate the VR origin so that the hand position in the game world stays constant.
-            RestoreHandMidpointWorldPosition(handMidpointDuringGripMovement);
+            RestoreHandMidpointWorldPosition(handMidpoint);
         }
 
         internal static void RestoreHandMidpointWorldPosition(Vector3? desiredWorldPosition)
@@ -186,112 +142,164 @@ namespace BetterVR
             if (desiredWorldPosition == null || vrOrigin == null) return;
             vrOrigin.Translate((Vector3)desiredWorldPosition - vrOrigin.TransformPoint(handMidpointLocal), Space.World);
         }
+
+        public class TwoHandedWorldGrab : MonoBehaviour
+        {
+            private float scaleDraggingFactor;
+            private Vector3? desiredHandMidpointWorldCoordinates;
+            private static Vector3? lastHandPositionDifference = null;
+            private static TextMeshPro _scaleIndicator;
+            private static TextMeshPro scaleIndicator
+            {
+                get
+                {
+                    if (!_scaleIndicator || !_scaleIndicator.gameObject) _scaleIndicator = CreateScaleIndicator();
+                    return _scaleIndicator;
+                }
+            }
+            private bool _canScale = false;
+            internal bool canScale
+            {
+                get { return _canScale; }
+                set
+                {
+                    if (_canScale != value) InitializeScaleDraggingFactor();
+                    _canScale = value;
+                }
+            }
+
+            void OnEnable()
+            {
+                if (canScale) InitializeScaleDraggingFactor();
+
+                var vrOrigin = BetterVRPluginHelper.VROrigin;
+                if (vrOrigin == null)
+                {
+                    desiredHandMidpointWorldCoordinates = null;
+                    lastHandPositionDifference = null;
+                }
+                else
+                {
+                    desiredHandMidpointWorldCoordinates = vrOrigin.transform.TransformPoint(VRControllerInput.handMidpointLocal);
+                    lastHandPositionDifference = VivePose.GetPose(roleR).pos - VivePose.GetPose(roleL).pos;
+                }
+            }
+
+            void OnDisable()
+            {
+                _canScale = false;
+                if (scaleIndicator) scaleIndicator.enabled = false;
+            }
+
+            void OnRenderObject()
+            {
+                var vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
+                if (!vrOrigin) return;
+
+                if (BetterVRPlugin.IsTwoHandedTurnEnabled())
+                {
+                    Vector3 handPositionDifference = VivePose.GetPose(roleR).pos - VivePose.GetPose(roleL).pos;
+                    if (lastHandPositionDifference != null)
+                    {
+                        Quaternion localRotationDelta =
+                            Quaternion.FromToRotation(handPositionDifference, (Vector3)lastHandPositionDifference);
+
+                        if (BetterVRPlugin.AllowVerticalRotation.Value)
+                        {
+                            vrOrigin.rotation = vrOrigin.rotation * localRotationDelta;
+                        }
+                        else
+                        {
+                            vrOrigin.Rotate(0, localRotationDelta.eulerAngles.y, 0, Space.Self);
+                        }
+                    }
+                    lastHandPositionDifference = handPositionDifference;
+                }
+
+                scaleIndicator.enabled = canScale;
+
+                if (canScale)
+                {
+                    var scale = scaleDraggingFactor / VRControllerInput.handDistanceLocal;
+                    BetterVRPlugin.PlayerScale = scale;
+                    scaleIndicator?.SetText("" + String.Format("{0:0.000}", scale));
+                }
+
+                VRControllerInput.RestoreHandMidpointWorldPosition(desiredHandMidpointWorldCoordinates);
+            }
+
+            private void InitializeScaleDraggingFactor()
+            {
+                scaleDraggingFactor = handDistanceLocal * BetterVRPlugin.PlayerScale;
+            }
+
+            private static TextMeshPro CreateScaleIndicator()
+            {
+                var camera = BetterVRPluginHelper.VRCamera;
+                if (!camera) return null;
+                var textMesh =
+                    new GameObject().AddComponent<Canvas>().gameObject.AddComponent<TextMeshPro>();
+                textMesh.transform.SetParent(camera.transform);
+                textMesh.transform.localPosition = new Vector3(0, 0.25f, 0.75f);
+                textMesh.transform.localRotation = Quaternion.identity;
+                textMesh.transform.localScale = Vector3.one * 0.1f;
+                textMesh.fontSize = 16;
+                textMesh.color = Color.blue;
+                textMesh.alignment = TextAlignmentOptions.Center;
+                return textMesh;
+            }
+        }
+
+        public class OneHandedWorldGrab : MonoBehaviour
+        {
+            Transform worldPivot;
+            Transform worldPlacer;
+            Transform vrOrginPlacer;
+
+            void Awake()
+            {
+                (worldPivot = new GameObject().transform).parent = transform;
+                (worldPlacer = new GameObject().transform).SetParent(worldPivot, worldPositionStays: true);
+                (vrOrginPlacer = new GameObject().transform).parent = worldPlacer;
+            }
+
+            void OnEnable()
+            {
+                // Place both the world pivot and the world placer at world rotation.
+                worldPivot.rotation = Quaternion.identity;
+                worldPivot.localPosition = Vector3.zero;
+                // Use world placer to record the current world transform relative to the controller.
+                worldPlacer.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
+
+            void OnRenderObject()
+            {
+                var vrOrigin = BetterVRPluginHelper.VROrigin;
+                if (!vrOrigin) return;
+
+                if (!BetterVRPlugin.IsOneHandedTurnEnabled())
+                {
+                    worldPivot.rotation = Quaternion.identity;
+                }
+                else if (!BetterVRPlugin.AllowVerticalRotation.Value)
+                {
+                    // Remove vertical rotation.
+                    var angles = worldPivot.rotation.eulerAngles;
+                    worldPivot.rotation = Quaternion.Euler(0, angles.y, 0);
+                }
+
+                // Use vrOrginPlacer to record the current vrOrigin rotation and position
+                vrOrginPlacer.transform.SetPositionAndRotation(vrOrigin.transform.position, vrOrigin.transform.rotation);
+
+                // Reset the world placer to where the world is and see how that affects vrOrigin placer.
+                worldPlacer.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+                // Restore the relative relation between the world and the controller by moving and rotating vrOrgin.
+                vrOrigin.transform.SetPositionAndRotation(vrOrginPlacer.position, vrOrginPlacer.rotation);
+
+                // Use world placer to record the current world transform relative to the controller so it can be used in the next frame.
+                worldPlacer.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
+        }
     }
-
-    public class WorldGrabScale : MonoBehaviour {
-        internal bool isDraggingScale { get; private set; }
-        private float scaleDraggingFactor;
-        private static TextMeshPro _scaleIndicator;
-        private static TextMeshPro scaleIndicator
-        {
-            get
-            {
-                if (!_scaleIndicator || !_scaleIndicator.gameObject) _scaleIndicator = CreateScaleIndicator();
-                return _scaleIndicator;
-            }
-        }
-        private Vector3? desiredHandMidpointWorldCoordinate;
-
-        void OnEnable()
-        {
-            if (scaleIndicator) scaleIndicator.enabled = true;
-            scaleDraggingFactor = VRControllerInput.handDistanceLocal * BetterVRPlugin.PlayerScale;
-            var vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
-            if (vrOrigin == null)
-            {
-                desiredHandMidpointWorldCoordinate = null;
-            }
-            else
-            {
-                desiredHandMidpointWorldCoordinate = vrOrigin.TransformPoint(VRControllerInput.handMidpointLocal);
-            }
-        }
-
-        void OnDisable()
-        {
-            if (scaleIndicator) scaleIndicator.enabled = false;
-        }
-
-        void OnRenderObject()
-        {
-            var scale = scaleDraggingFactor / VRControllerInput.handDistanceLocal;
-            BetterVRPlugin.PlayerScale = scale;
-            VRControllerInput.RestoreHandMidpointWorldPosition(desiredHandMidpointWorldCoordinate);
-            scaleIndicator?.SetText("" + String.Format("{0:0.000}", scale));
-        }
-
-        private static TextMeshPro CreateScaleIndicator()
-        {
-            var camera = BetterVRPluginHelper.VRCamera;
-            if (!camera) return null;
-            var textMesh =
-                new GameObject().AddComponent<Canvas>().gameObject.AddComponent<TextMeshPro>();
-            textMesh.transform.SetParent(camera.transform);
-            textMesh.transform.localPosition = new Vector3(0, 0.25f, 0.75f);
-            textMesh.transform.localRotation = Quaternion.identity;
-            textMesh.transform.localScale = Vector3.one * 0.1f;
-            textMesh.fontSize = 16;
-            textMesh.color = Color.blue;
-            textMesh.alignment = TextAlignmentOptions.Center;
-            return textMesh;
-        }
-    }
-
-    public class WorldGrabReposition : MonoBehaviour {
-        Transform worldPivot;
-        Transform worldPlacer;
-        Transform vrOrginPlacer;
-
-        void Awake()
-        {
-            (worldPivot = new GameObject().transform).parent = transform;
-            (worldPlacer = new GameObject().transform).SetParent(worldPivot, worldPositionStays: true);
-            (vrOrginPlacer = new GameObject().transform).parent = worldPlacer;
-        }
-
-        void OnEnable()
-        {
-            // Place both the world pivot and the world placer at world rotation.
-            worldPivot.rotation = Quaternion.identity;
-            worldPivot.localPosition = Vector3.zero;
-            // Use world placer to record the current world transform relative to the controller.
-            worldPlacer.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-        }
-
-        void OnRenderObject()
-        {
-            var vrOrigin = BetterVRPluginHelper.VROrigin;
-            if (!vrOrigin) return;
-
-            if (!BetterVRPlugin.AllowVerticalRotation.Value)
-            {
-                // Remove vertical rotation.
-                var angles = worldPivot.rotation.eulerAngles;
-                worldPivot.rotation = Quaternion.Euler(0, angles.y, 0);
-            }
-
-            // Use vrOrginPlacer to record the current vrOrigin rotation and position
-            vrOrginPlacer.transform.SetPositionAndRotation(vrOrigin.transform.position, vrOrigin.transform.rotation);
-
-            // Reset the world placer to where the world is and see how that affects vrOrigin placer.
-            worldPlacer.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-
-            // Restore the relative relation between the world and the controller by moving and rotating vrOrgin.
-            vrOrigin.transform.SetPositionAndRotation(vrOrginPlacer.position, vrOrginPlacer.rotation);
-
-            // Use world placer to record the current world transform relative to the controller so it can be used in the next frame.
-            worldPlacer.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-        }
-    }
-
 }
