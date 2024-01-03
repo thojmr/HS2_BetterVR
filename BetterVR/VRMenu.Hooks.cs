@@ -135,5 +135,23 @@ namespace BetterVR
         {
             PositionUnlockPatch(HSceneManager.HResourceTables);
         }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(DynamicBone_Ver02), "Awake")]
+        internal static void SiriBoneRadiusFix(DynamicBone_Ver02 __instance)
+        {
+            foreach (var pattern in __instance.Patterns)
+            {
+                // Changing dynamic bone parameters is ineffective once it is active, so the must be changed before Awake() is called.
+                foreach (var param in pattern.Params)
+                {
+                    // BetterVRPlugin.Logger.LogWarning("DBV2 " + __instance.name + " ptn " + pattern.Name + " param " + param.Name + " " + param.CollisionRadius + " " + param.NextBoneLength + " " + param.Stiffness);
+                    if (param.Name.Contains("Siri") || param.Name.Contains("siri"))
+                    {
+                        // Increase siri collision radius since the vanilla radius is too small for motion control interaction.
+                        param.CollisionRadius = Mathf.Max(param.CollisionRadius, 0.75f);
+                    }
+                }
+            }
+        }
     }
 }
