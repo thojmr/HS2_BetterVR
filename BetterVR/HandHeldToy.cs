@@ -74,7 +74,11 @@ namespace BetterVR
 
             if (ShouldAttachToBody()) AttachToBody();
 
-            if (transform.parent == bodyAttach) CorrectBodyAttach(smooth: true);
+            if (transform.parent == bodyAttach)
+            {
+                CorrectBodyAttach(smooth: true);
+                RotateModelsTowardTarget();
+            }
 
             hSpeedGesture.enabled = transform.parent != null && mode != 0;
         }
@@ -139,7 +143,7 @@ namespace BetterVR
         {
             if (bodyAttach == null || bodyAttach.gameObject == null)
             {
-                bodyAttach = new GameObject("ToyHeadAttach").transform;
+                bodyAttach = new GameObject("ToyBodyAttach").transform;
             }
 
             bodyAttach.parent = BetterVRPluginHelper.VROrigin?.transform;
@@ -162,14 +166,56 @@ namespace BetterVR
             var targetForward = Vector3.ProjectOnPlane(camera.transform.forward, bodyAttach.up);
 
             // Move body attach to the horizontal position of the camera.
-            var targetPosition = bodyAttach.parent.position + Vector3.ProjectOnPlane(camera.transform.position - bodyAttach.parent.position, bodyAttach.up);
+            var targetPosition =
+                bodyAttach.parent.position + Vector3.ProjectOnPlane(camera.transform.position - bodyAttach.parent.position, bodyAttach.parent.up);
 
             if (smooth) {
                 targetForward = Vector3.SmoothDamp(bodyAttach.forward, targetForward, ref bodyAttachAngularVelocity, 0.25f);
                 targetPosition = Vector3.SmoothDamp(bodyAttach.position, targetPosition, ref bodyAttachVelocity, 0.0625f);
             }
+            else
+            {
+                bodyAttachVelocity = bodyAttachAngularVelocity = Vector3.zero;
+            }
 
             bodyAttach.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(targetForward, bodyAttach.parent.up));
+        }
+
+        private void ResetModelOrientation()
+        {
+            collider.transform.localRotation = Quaternion.identity;
+            collider.transform.localPosition = Vector3.zero;
+            simpleModel.transform.localRotation = Quaternion.identity;
+            simpleModel.transform.localPosition = Vector3.zero;
+            if (fullModel)
+            {
+                fullModel.transform.localRotation = Quaternion.identity;
+                fullModel.transform.position += transform.position - fullModel.GetComponent<MeshRenderer>().bounds.center;
+            }
+        }
+
+        private void RotateModelsTowardTarget()
+        {
+            var target = hSpeedGesture?.interactingCollider;
+
+            var rotation = Quaternion.identity;
+            var localPivot = Vector3.down * HEIGHT / 4;
+            if (target != null && (target.name.Contains("agina") || target.name.Contains("okan")))
+            {
+                rotation = Quaternion.LookRotation(
+                    transform.InverseTransformPoint(target.transform.position) - localPivot, Vector3.back);
+                rotation = Quaternion.Euler(90, 0, 0) * rotation;
+            }
+            
+            simpleModel.transform.localRotation = Quaternion.Slerp(simpleModel.transform.localRotation, rotation, Time.deltaTime * 4);
+            simpleModel.transform.localPosition = localPivot - simpleModel.transform.localRotation * localPivot;
+            collider.transform.localRotation = simpleModel.transform.localRotation;
+            collider.transform.localPosition = simpleModel.transform.localPosition;
+            if (fullModel)
+            {
+                fullModel.transform.localRotation = simpleModel.transform.localRotation;
+                fullModel.transform.position += simpleModel.transform.position - fullModel.GetComponent<MeshRenderer>().bounds.center;
+            }
         }
 
         private void CreateSimpleModel()
@@ -241,10 +287,13 @@ namespace BetterVR
 
         private void CreateCollider()
         {
-            collider = gameObject.AddComponent<DynamicBoneCollider>();
+            collider = new GameObject("HandHeldToyCollider").AddComponent<DynamicBoneCollider>();
             collider.m_Direction = DynamicBoneColliderBase.Direction.Y;
             collider.m_Radius = HAND_HELD_RADIUS;
             collider.m_Height = HEIGHT;
+            collider.transform.parent = transform;
+            collider.transform.localPosition = Vector3.zero;
+            collider.transform.localRotation = Quaternion.identity;
         }
 
         private void AttachAndBringToRangeOf(Transform parent)
@@ -255,6 +304,7 @@ namespace BetterVR
                 transform.localPosition = Vector3.zero;
             }
             hSpeedGesture.activationRadius = HAND_HELD_RADIUS;
+            ResetModelOrientation();
         }
     }
 }
