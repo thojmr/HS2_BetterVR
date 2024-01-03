@@ -12,7 +12,7 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
     - Can adjust the scale in config options
     - Can also hold both grips and both triggers and stretch to adjust the scale
 - Adds config option to allow vertical rotation.
-    - "View reset" option in the radial menu will reset vertical rotation too
+    - `View reset` option in the radial menu will reset vertical rotation too
 - Adds a `Random` button to the Character selection screen that will select a random female/male, and start the HScene.
     - You can select a map, and then hit random to use a specific map with random characters
     - (May not work in some cases) The config option `Multiple Heroine when Random`: will add two random heroine to the HScene
