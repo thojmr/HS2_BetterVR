@@ -9,17 +9,15 @@ namespace BetterVR
         private const float LOOP_SLOW_FAST_DIVIDER = 1f;
         private const float SLOW_MODE_ACTIVATION_THRESHOLD = 0.25f;
         private const float FAST_MODE_ACTIVATION_THRESHOLD = 1.25f;
-        private static readonly Regex INTERACTING_COLLIDER_NAME_MATCHER =
-            new Regex(@"[Mm]une|[Cc]hest|agina|okan");
-        private static readonly Regex INTERACTING_MILD_COLLIDER_NAME_MATCHER =
-            new Regex(@"[Nn]eck|[Ll]eg|[Ss]iri|[Bb]elly");
+        private static readonly Regex SENSITIVE_COLLIDER_NAME_MATCHER = new Regex(@"[Mm]une|[Cc]hest|agina|okan");
+        private static readonly Regex MILD_COLLIDER_NAME_MATCHER = new Regex(@"[Nn]eck|[Ll]eg|[Ss]iri|[Bb]elly");
 
         internal ViveRoleProperty roleProperty;
         internal Transform capsuleStart;
         internal Transform capsuleEnd;
         internal float activationRadius = 0.25f;
         internal float deactivationDistance = 0.5f;
-        internal float sensitivityMultiplier = 0.75f;
+        internal float sensitivityMultiplier = 1;
 
         private Collider interactingCollider;
         private float smoothTargetSpeed = 0;
@@ -42,6 +40,12 @@ namespace BetterVR
             }
 
             UpdateSmoothTargetSpeed(hCtrl, isTouching ? targetSpeed : 0);
+
+            if (isTouching && hCtrl.loopType >= 0 && hCtrl.loopType <= 2 && hCtrl.speed > 0 && BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
+            {
+                ViveInput.TriggerHapticVibration(
+                    roleProperty, frequency: hCtrl.isGaugeHit ? 60 : 35, amplitude: hCtrl.speed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value);
+            }
 
             switch (hCtrl.loopType)
             {
@@ -103,13 +107,13 @@ namespace BetterVR
             Collider[] colliders = Physics.OverlapCapsule(capsuleStart.position, capsuleEnd.position, activationRadius * scale);
             foreach (var collider in colliders)
             {
-                if (INTERACTING_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
+                if (SENSITIVE_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
                 {
                     interactingCollider = collider;
                     isColliderMild = false;
                     return true;
                 }
-                if (canInteractWithMildCollider && INTERACTING_MILD_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
+                if (canInteractWithMildCollider && MILD_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
                 {
                     interactingCollider = collider;
                     isColliderMild = true;
@@ -136,6 +140,33 @@ namespace BetterVR
             // BetterVRPlugin.Logger.LogWarning(
             //    "H Loop type: " +  hCtrl.loopType + " current speed: " + hCtrl.speed +
             //    " smooth target speed: " + smoothTargetSpeed + " target speed: " + targetSpeed);
+        }
+    }
+
+    internal class FinishHHaptic : MonoBehaviour
+    {
+        const float DURATION = 3;
+        private float timePassed = 0;
+
+        void OnEnable()
+        {
+            timePassed = 0;
+        }
+
+        void FixedUpdate()
+        {
+            if (timePassed > DURATION)
+            {
+                enabled = false;
+                return;
+            }
+
+            var intensity = BetterVRPlugin.HapticFeedbackIntensity.Value * (1 - Mathf.Pow(timePassed / DURATION, 4f));
+
+            ViveInput.TriggerHapticVibration(HandRole.LeftHand, amplitude: intensity);
+            ViveInput.TriggerHapticVibration(HandRole.RightHand, amplitude: intensity);
+
+            timePassed += Time.fixedDeltaTime;
         }
     }
 }
