@@ -10,7 +10,9 @@ namespace BetterVR
         private const float SLOW_MODE_ACTIVATION_THRESHOLD = 0.25f;
         private const float FAST_MODE_ACTIVATION_THRESHOLD = 1.25f;
         private static readonly Regex INTERACTING_COLLIDER_NAME_MATCHER =
-            new Regex(@"Mune|mune|Chest|chest|agina|okan");
+            new Regex(@"[Mm]une|[Cc]hest|agina|okan");
+        private static readonly Regex INTERACTING_MILD_COLLIDER_NAME_MATCHER =
+            new Regex(@"[Nn]eck|[Ll]eg|[Ss]iri|[Bb]elly");
 
         internal ViveRoleProperty roleProperty;
         internal Transform capsuleStart;
@@ -22,6 +24,7 @@ namespace BetterVR
         private Collider interactingCollider;
         private float smoothTargetSpeed = 0;
         private bool isTouching;
+        private bool isColliderMild;
 
         void FixedUpdate()
         {
@@ -46,7 +49,7 @@ namespace BetterVR
                     smoothTargetSpeed = 0;
                     break;
                 case 0:
-                    if (smoothTargetSpeed > FAST_MODE_ACTIVATION_THRESHOLD)
+                    if (smoothTargetSpeed > FAST_MODE_ACTIVATION_THRESHOLD && !isColliderMild)
                     {
                         // Increase speed to move onto loop stage 1
                         hCtrl.speed = FAST_MODE_ACTIVATION_THRESHOLD;
@@ -68,6 +71,7 @@ namespace BetterVR
                 default:
                     // Curve speed output to require faster movement.
                     hCtrl.speed = Mathf.Clamp(smoothTargetSpeed * smoothTargetSpeed / 2, 0, 2f);
+                    if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.99f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
                     break;
             }
 
@@ -82,7 +86,9 @@ namespace BetterVR
             if (capsuleStart == null) capsuleStart = transform;
             if (capsuleEnd == null) capsuleEnd = transform;
 
-            float scale = transform.TransformVector(Vector3.right).magnitude;
+            float scale = transform.lossyScale.x;
+
+            if (ctrl.loopType > 0 && isColliderMild) interactingCollider = null;
 
             if (interactingCollider) {
                 Vector3 capsuleCenter = Vector3.Lerp(capsuleStart.position, capsuleEnd.position, 0.5f);
@@ -93,23 +99,30 @@ namespace BetterVR
             }
 
             interactingCollider = null;
+            bool canInteractWithMildCollider = ctrl.loopType < 1 && smoothTargetSpeed < 0.5f;
             Collider[] colliders = Physics.OverlapCapsule(capsuleStart.position, capsuleEnd.position, activationRadius * scale);
             foreach (var collider in colliders)
             {
                 if (INTERACTING_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
                 {
                     interactingCollider = collider;
+                    isColliderMild = false;
                     return true;
                 }
+                if (canInteractWithMildCollider && INTERACTING_MILD_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
+                {
+                    interactingCollider = collider;
+                    isColliderMild = true;
+                }
             }
-            return false;
+            return interactingCollider != null;
         }
 
         private void UpdateSmoothTargetSpeed(HSceneFlagCtrl hCtrl, float targetSpeed)
         {
             if (smoothTargetSpeed == targetSpeed) return;
 
-            targetSpeed = Mathf.Clamp(targetSpeed, 0, 2);
+            targetSpeed = Mathf.Clamp(targetSpeed, 0, isColliderMild ? 0.5f : 2);
 
             float accelerationFactor = 1f;
             if (hCtrl.isGaugeHit)
