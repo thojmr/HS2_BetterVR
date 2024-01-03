@@ -74,17 +74,7 @@ namespace BetterVR
 
             VRControllerInput.MaybeRestoreVrOriginTransform();
 
-            VRControllerInput.CheckInputForSqueezeScaling();
-
-            // When the user squeezes the controller, apply hand rotation to headset.
-            if (SqueezeToTurn.Value == "One-handed")
-            {
-                VRControllerInput.UpdateOneHandedMovements();
-            }
-            else if (SqueezeToTurn.Value == "Two-handed")
-            {
-                VRControllerInput.UpdateTwoHandedMovements();
-            }
+            VRControllerInput.UpdateSqueezeMovement();
 
             BetterVRPluginHelper.gaugeHitIndicator.UpdateIndicators();
         }
