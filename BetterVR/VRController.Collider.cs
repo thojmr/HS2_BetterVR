@@ -1,11 +1,13 @@
+using System.Linq;
 using System.Text.RegularExpressions;
+using Manager;
 using UnityEngine;
 
 namespace BetterVR
 {
 	public static class VRControllerCollider
 	{
-		private static readonly Regex INDEX_COLLIDING_BONE_MATCHER = new Regex(@"agina|okan");
+		private static readonly Regex INDEX_COLLIDING_BONE_MATCHER = new Regex(@"agina|okan|[Aa]na");
 		private static DynamicBoneCollider leftControllerCollider;
 		private static DynamicBoneCollider rightControllerCollider;
 		private static DynamicBoneCollider floorCollider;
@@ -14,13 +16,20 @@ namespace BetterVR
 
 		internal static void UpdateDynamicBoneColliders()
 		{
+			var females = Singleton<HSceneManager>.Instance?.Hscene?.GetFemales();
+			if (females == null || females.Length == 0) return;
+
+			DynamicBone_Ver02[] dynamicBonesV2 = { };
+			DynamicBone[] dynamicBones = { };
 			//Get all dynamic bones
-			var dynamicBonesV2 = GameObject.FindObjectsOfType<DynamicBone_Ver02>();
-			var dynamicBones = GameObject.FindObjectsOfType<DynamicBone>();
-			if (dynamicBonesV2.Length == 0 && dynamicBones.Length == 0)
-			{
-				return;
+			for (int i = 0; i < females.Length; i++)
+            {
+				if (females[i] == null) continue;
+				dynamicBonesV2 = dynamicBonesV2.Concat(females[i].GetComponentsInChildren<DynamicBone_Ver02>()).ToArray();
+				dynamicBones = dynamicBones.Concat(females[i].GetComponentsInChildren<DynamicBone>()).ToArray();
 			}
+
+			if (dynamicBonesV2.Length == 0 && dynamicBones.Length == 0) return;
 
 			UpdateControllerColliders(dynamicBones, dynamicBonesV2);
 			UpdateIndexColliders(dynamicBones, dynamicBonesV2);
