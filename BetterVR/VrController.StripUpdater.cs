@@ -54,6 +54,10 @@ namespace BetterVR
                     if (Vector3.Distance(handPos, stripStartPos) > STRIP_MIN_DRAG_RANGE * BetterVRPlugin.PlayerScale)
                     {
                         grabbedStripCollider.Clothe();
+                        if (BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
+                        {
+                            ViveInput.TriggerHapticVibration(handRole, amplitude: BetterVRPlugin.HapticFeedbackIntensity.Value);
+                        }
                     }
                 }
                 canClothe = false;
@@ -73,11 +77,17 @@ namespace BetterVR
                 {
                     if (Vector3.Angle(handPos - stripStartPos, grabbedStripCollider.transform.position - stripStartPos) > 90)
                     {
-                        grabbedStripCollider.StripMore();
+                        if (grabbedStripCollider.StripMore() && BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
+                        {
+                            ViveInput.TriggerHapticVibration(handRole, amplitude: BetterVRPlugin.HapticFeedbackIntensity.Value);
+                        }
                     }
                     else
                     {
-                        grabbedStripCollider.StripLess();
+                        if (grabbedStripCollider.StripLess() && BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
+                        {
+                            ViveInput.TriggerHapticVibration(handRole, amplitude: BetterVRPlugin.HapticFeedbackIntensity.Value);
+                        }
                     }
                     stripStartPos = handPos;
                 }
@@ -382,14 +392,18 @@ namespace BetterVR
             return character != null && character.isActiveAndEnabled && character.visibleAll && character.IsClothes(clothType);
         }
 
-        internal void StripMore()
+        internal bool StripMore()
         {
-            if (stripLevel < 2) character.SetClothesStateNext(clothType);
+            if (stripLevel >= 2) return false;
+            character.SetClothesStateNext(clothType);
+            return true;
         }
 
-        internal void StripLess()
+        internal bool StripLess()
         {
-            if (stripLevel > 0) character.SetClothesStatePrev(clothType);
+            if (stripLevel == 0) return false;
+            character.SetClothesStatePrev(clothType);
+            return true;
         }
 
         internal void Clothe()
