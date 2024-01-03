@@ -119,22 +119,21 @@ namespace BetterVR
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
             if (!vrOrigin) return;
 
+            bool leftHandGrabbing = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress();
+            bool rightHandGrabbing = BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress();
+
             // Check right hand
-            bool shouldMoveWithRightHand =
-                BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress() && !BetterVRPluginHelper.LeftHandGripPress();
             var rightControllerModel = BetterVRPluginHelper.FindRightControllerRenderModel(out var rCenter);
             if (rightControllerModel)
             {
-                rightControllerModel.GetOrAddComponent<WorldGrabReposition>().enabled = shouldMoveWithRightHand;
+                rightControllerModel.GetOrAddComponent<WorldGrabReposition>().enabled = rightHandGrabbing && !leftHandGrabbing;
             }
 
             // Check left hand
-            bool shouldMoveWithLeftHand =
-                BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress() && !BetterVRPluginHelper.RightHandGripPress();
             var leftControllerModel = BetterVRPluginHelper.FindLeftControllerRenderModel(out var lCenter);
             if (leftControllerModel)
             {
-                leftControllerModel.GetOrAddComponent<WorldGrabReposition>().enabled = shouldMoveWithLeftHand;
+                leftControllerModel.GetOrAddComponent<WorldGrabReposition>().enabled = leftHandGrabbing && !rightHandGrabbing;
             }
         }
 
