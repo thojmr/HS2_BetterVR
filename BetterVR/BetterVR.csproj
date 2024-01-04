@@ -165,4 +165,8 @@
   </ItemGroup> 
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<Exec Command="../release.cmd"/>
+  </Target>
 </Project>
