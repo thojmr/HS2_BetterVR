@@ -142,12 +142,6 @@ namespace BetterVR
             get { return (_handHeldToy && _handHeldToy.gameObject) ? _handHeldToy : (_handHeldToy = new GameObject("BetterVRHandHeldToy").AddComponent<HandHeldToy>()); }
         }
 
-        private static GaugeHitIndicator _gaugeHitIndicator;
-        internal static GaugeHitIndicator gaugeHitIndicator
-        {
-            get { return _gaugeHitIndicator ?? (_gaugeHitIndicator = new GaugeHitIndicator()); }
-        }
-
         /// Use an enum to get the correct hand
         /// </summary>
         internal static GameObject GetHand(VR_Hand hand)
@@ -164,14 +158,14 @@ namespace BetterVR
         internal static GameObject GetLeftHand()
         {
             var leftHand = GameObject.Find("ViveControllers/Left") ?? GameObject.Find("Controller (left)");
-            if (leftHand && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetLeftHand id {leftHand.GetInstanceID()}");
+            // if (leftHand && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetLeftHand id {leftHand.GetInstanceID()}");
             return leftHand;
         }
 
         internal static GameObject GetRightHand()
         {
             var rightHand = GameObject.Find("ViveControllers/Right") ?? GameObject.Find("Controller (right)");
-            if (rightHand && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetRightHand id {rightHand.GetInstanceID()}");
+            // if (rightHand && BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" GetRightHand id {rightHand.GetInstanceID()}");
             return rightHand;
         }
 
