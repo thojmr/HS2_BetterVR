@@ -117,7 +117,7 @@ namespace BetterVR
         [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishInSide))]
         internal static void HSceneFinishPatch()
         {
-            pluginInstance.GetOrAddComponent<FinishHHaptic>().enabled = true;
+            pluginInstance.GetOrAddComponent<FadingHaptic>().enabled = true;
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(HSceneSprite), nameof(HSceneSprite.OnClickFinishOutSide))]
