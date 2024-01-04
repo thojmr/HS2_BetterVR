@@ -38,59 +38,51 @@ namespace BetterVR
             }
         }
 
-        internal void ShowIfGaugeIsHit()
+        internal void UpdateIndicators(bool isHSpeedGestureEffective)
         {
-            if (!IsGaugeHit()) return;
             if (!leftHandIndicator || !rightHandIndicator || !headIndicator) return;
 
-            smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, 1, ref acceleration, 0.125f);
-            leftHandIndicator.gameObject.SetActive(true);
-            rightHandIndicator.gameObject.SetActive(true);
-            headIndicator.gameObject.SetActive(true);
+            if (IsGaugeHit() && (isHSpeedGestureEffective || smoothGaugeHit > 0))
+            {
+                leftHandIndicator.gameObject.SetActive(true);
+                rightHandIndicator.gameObject.SetActive(true);
+                headIndicator.gameObject.SetActive(true);
+                smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, 1, ref acceleration, 0.125f);
+            }
+            else if (!leftHandIndicator.isActiveAndEnabled && !rightHandIndicator.isActiveAndEnabled && !headIndicator.isActiveAndEnabled)
+            {
+                return;
+            } 
+            else
+            {
+                smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, -0.125f, ref acceleration, 0.25f);
+                if (smoothGaugeHit < 0)
+                {
+                    smoothGaugeHit = 0;
+                    acceleration = 0;
+                    headIndicator.gameObject.SetActive(false);
+                    leftHandIndicator.gameObject.SetActive(false);
+                    rightHandIndicator.gameObject.SetActive(false);
+                    return;
+                }
+            }
 
             UpdateIndicatorSizeAndColor();
-            var camera = BetterVRPluginHelper.VRCamera;
-            var vrOrigin = BetterVRPluginHelper.VROrigin;
-            if (camera == null || vrOrigin == null) return;
-            leftHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-            rightHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-            headIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-        }
 
-        internal void UpdateIndicators()
-        {
             var camera = BetterVRPluginHelper.VRCamera;
             var vrOrigin = BetterVRPluginHelper.VROrigin;
+
             if (camera && vrOrigin)
             {
+                leftHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
+                rightHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
+                headIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
                 headIndicator.transform.position =
                 Vector3.SmoothDamp(
                     headIndicator.transform.position,
                     camera.transform.TransformPoint(0, 0.3125f, 0.75f),
                     ref headIndicatorVelocity,
                     1f);
-            }
-
-            if (IsGaugeHit()) return;
-            if (!leftHandIndicator || !rightHandIndicator || !headIndicator) return;
-
-            if (!leftHandIndicator.isActiveAndEnabled && !rightHandIndicator.isActiveAndEnabled && !headIndicator.isActiveAndEnabled)
-            {
-                smoothGaugeHit = 0;
-                return;
-            }
-
-            smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, -0.125f, ref acceleration, 0.25f);
-            if (smoothGaugeHit < 0)
-            {
-                smoothGaugeHit = 0;
-                headIndicator.gameObject.SetActive(false);
-                leftHandIndicator.gameObject.SetActive(false);
-                rightHandIndicator.gameObject.SetActive(false);
-            }
-            else
-            {
-                UpdateIndicatorSizeAndColor();
             }
         }
 
