@@ -253,23 +253,23 @@ namespace BetterVR
         public class OneHandedWorldGrab : MonoBehaviour
         {
             Transform worldPivot;
-            Transform worldPlacer;
             Transform vrOrginPlacer;
+            Vector3 desiredControllerPosition;
 
             void Awake()
             {
                 (worldPivot = new GameObject().transform).parent = transform;
-                (worldPlacer = new GameObject().transform).SetParent(worldPivot, worldPositionStays: true);
-                (vrOrginPlacer = new GameObject().transform).parent = worldPlacer;
+                (vrOrginPlacer = new GameObject().transform).parent = new GameObject().transform;
             }
 
             void OnEnable()
             {
-                // Place both the world pivot and the world placer at world rotation.
+                // Place the world pivot at neutral rotation.
                 worldPivot.rotation = Quaternion.identity;
+                // Pivot the world around the controller.
                 worldPivot.localPosition = Vector3.zero;
-                // Use world placer to record the current world transform relative to the controller.
-                worldPlacer.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+                desiredControllerPosition = worldPivot.position;
             }
 
             void OnRenderObject()
@@ -288,17 +288,17 @@ namespace BetterVR
                     worldPivot.rotation = Quaternion.Euler(0, angles.y, 0);
                 }
 
+                // Make sure the position and rotation of the vrOriginPlacer's parent is the same as teh world pivot.
+                vrOrginPlacer.parent.SetPositionAndRotation(worldPivot.transform.position, worldPivot.transform.rotation);
+
                 // Use vrOrginPlacer to record the current vrOrigin rotation and position
-                vrOrginPlacer.transform.SetPositionAndRotation(vrOrigin.transform.position, vrOrigin.transform.rotation);
+                vrOrginPlacer.SetPositionAndRotation(vrOrigin.transform.position, vrOrigin.transform.rotation);
 
-                // Reset the world placer to where the world is and see how that affects vrOrigin placer.
-                worldPlacer.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                // Move the vrOriginPlacer's parent to where the controller should be to see how that affects vrOriginPlacer.
+                vrOrginPlacer.parent.SetPositionAndRotation(desiredControllerPosition, Quaternion.identity);
 
-                // Restore the relative relation between the world and the controller by moving and rotating vrOrgin.
+                // Move and rotate vrOrgin to restore the original position and rotation of the controller.
                 vrOrigin.transform.SetPositionAndRotation(vrOrginPlacer.position, vrOrginPlacer.rotation);
-
-                // Use world placer to record the current world transform relative to the controller so it can be used in the next frame.
-                worldPlacer.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
         }
     }
