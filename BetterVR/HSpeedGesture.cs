@@ -82,12 +82,12 @@ namespace BetterVR
                 if (BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
                 {
                     if (roleProperty == VRControllerInput.roleL) {
-                        leftHandFadingHaptic.duration = 0.25f;
+                        leftHandFadingHaptic.duration = 0.375f;
                         leftHandFadingHaptic.enabled = true;
                     }
                     else if (roleProperty == VRControllerInput.roleR)
                     {
-                        rightHandFadingHaptic.duration = 0.25f;
+                        rightHandFadingHaptic.duration = 0.375f;
                         rightHandFadingHaptic.enabled = true;
                     }
                 }
