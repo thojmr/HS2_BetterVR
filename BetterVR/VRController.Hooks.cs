@@ -73,10 +73,9 @@ namespace BetterVR
             // This method works for Oculus controllers' thumbsticks too.
             var axis = BetterVRPluginHelper.GetRightHandPadStickCombinedOutput();
 
-            if (axis == Vector2.zero)
-            {
-                return true;
-            }
+            if (HSpeedGestureReceiver.shouldAttemptToStartAction) axis.y = 1;
+
+            if (axis == Vector2.zero) return true;
 
             // The vanilla pad/thumb stick detection is half broken and does not work on some platforms, giving rise to the necessity of this patch.
             __result = axis;
