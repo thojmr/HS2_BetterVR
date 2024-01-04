@@ -75,8 +75,6 @@ namespace BetterVR
             VRControllerInput.MaybeRestoreVrOriginTransform();
 
             VRControllerInput.UpdateSqueezeMovement();
-
-            BetterVRPluginHelper.gaugeHitIndicator.UpdateIndicators();
         }
 
         internal static AIChara.ChaControl GetPlayer()
