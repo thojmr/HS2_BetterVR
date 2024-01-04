@@ -22,15 +22,15 @@ namespace BetterVR
         private bool isTouching;
         private bool isColliderSensitive;
         private static HSpeedGestureReceiver receiver;
-        private static FinishHHaptic _leftHandHHaptic;
-        private static FinishHHaptic _rightHandHHaptic;
-        internal static FinishHHaptic leftHandHHaptic
+        private static FadingHaptic _leftHandHHaptic;
+        private static FadingHaptic _rightHandHHaptic;
+        internal static FadingHaptic leftHandFadingHaptic
         {
             get
             {
                 if (_leftHandHHaptic == null)
                 {
-                    _leftHandHHaptic = new GameObject("LeftHandHHaptic").AddComponent<FinishHHaptic>();
+                    _leftHandHHaptic = new GameObject("LeftHandHHaptic").AddComponent<FadingHaptic>();
                     _leftHandHHaptic.onLeftHand = true;
                     _leftHandHHaptic.onRightHand = false;
                     _leftHandHHaptic.enabled = false;
@@ -38,13 +38,13 @@ namespace BetterVR
                 return _leftHandHHaptic;
             }
         }
-        internal static FinishHHaptic rightHandHHaptic
+        internal static FadingHaptic rightHandFadingHaptic
         {
             get
             {
                 if (_rightHandHHaptic == null)
                 {
-                    _rightHandHHaptic = new GameObject("RightHandHHaptic").AddComponent<FinishHHaptic>();
+                    _rightHandHHaptic = new GameObject("RightHandHHaptic").AddComponent<FadingHaptic>();
                     _rightHandHHaptic.onLeftHand = false;
                     _rightHandHHaptic.onRightHand = true;
                     _rightHandHHaptic.enabled = false;
@@ -76,19 +76,19 @@ namespace BetterVR
 
             if (anim != null && anim is Spnking && interactingCollider != null && targetSpeed > 12 &&
                 SPNKABLE_COLLIDER_NAME_MATCHER.IsMatch(interactingCollider.name) &&
-                Spnk(hScene, hCtrl))
+                receiver.Spnk(hScene, hCtrl))
             {
                 BetterVRPlugin.Logger.LogDebug("Spnk speed: " + targetSpeed);
                 if (BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
                 {
                     if (roleProperty == VRControllerInput.roleL) {
-                        leftHandHHaptic.duration = 0.5f;
-                        leftHandHHaptic.enabled = true;
+                        leftHandFadingHaptic.duration = 0.25f;
+                        leftHandFadingHaptic.enabled = true;
                     }
                     else if (roleProperty == VRControllerInput.roleR)
                     {
-                        rightHandHHaptic.duration = 0.5f;
-                        rightHandHHaptic.enabled = true;
+                        rightHandFadingHaptic.duration = 0.25f;
+                        rightHandFadingHaptic.enabled = true;
                     }
                 }
             } 
@@ -98,11 +98,6 @@ namespace BetterVR
                     roleProperty, frequency: hCtrl.isGaugeHit ? 90 : 35,
                     amplitude: targetSpeed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value);
             }
-        }
-
-        private bool Spnk(HScene hScene, HSceneFlagCtrl ctrl)
-        {
-            return hScene.GetProcBase()?.Proc(HSpeedGestureReceiver.GetModeCtrl(hScene), ctrl.nowAnimationInfo, 1) ?? false;
         }
 
         private bool ShouldBeTouching(HSceneFlagCtrl ctrl, float speed)
@@ -178,7 +173,7 @@ namespace BetterVR
         private const float IDLE_SPEED = -8f/64;
         private const float MIN_EFFECTIVE_SPEED = -7f/64;
         private const float LOOP_0_DEACTIVATION_THRESHOLD = -6f/64;
-        private const float LOOP_0_ACTIVATION_THRESHOLD = 0.625f;
+        private const float LOOP_0_ACTIVATION_THRESHOLD = 0.5f;
         private const float LOOP_01_DIVIDER = 1f; // This number is from the vanilla game
         private const float LOOP_1_DEACTIVATION_THRESHOLD = 0.125f;
         private const float LOOP_1_ACTIVATION_THRESHOLD = 1.5f;
@@ -277,15 +272,16 @@ namespace BetterVR
             return anim != null && anim is Aibu;
         }
 
-        internal static int GetModeCtrl(HScene hScene)
+        internal bool Spnk(HScene hScene, HSceneFlagCtrl ctrl)
         {
-            return (int)(modeCtrlField.GetValue(hScene) ?? -1);
+            var anim = hScene.GetProcBase();
+            if (anim == null || !(anim is Spnking)) return false;
+            return anim.Proc(GetModeCtrl(hScene), ctrl.nowAnimationInfo, 1);
         }
 
-        private static void StartMotion(HSceneFlagCtrl ctrl)
+        private static int GetModeCtrl(HScene hScene)
         {
-            HScene hScene = Singleton<Manager.HSceneManager>.Instance?.Hscene;
-            hScene?.GetProcBase()?.SetStartMotion(false, GetModeCtrl(hScene), ctrl.nowAnimationInfo);
+            return (int)(modeCtrlField.GetValue(hScene) ?? -1);
         }
 
         private static void StopMotion(HSceneFlagCtrl ctrl)
@@ -295,7 +291,7 @@ namespace BetterVR
         }
     }
 
-    internal class FinishHHaptic : MonoBehaviour
+    internal class FadingHaptic : MonoBehaviour
     {
         const float DEFAULT_DURATION = 3;
         private float timePassed = 0;
