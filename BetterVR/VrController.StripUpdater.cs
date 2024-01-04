@@ -203,8 +203,16 @@ namespace BetterVR
 
             stripIndicator.gameObject.SetActive(true);
             stripIndicator.material.color = STRIP_INDICATOR_COLORS[clothType];
+ 
+            if (clothIcons == null) finishedLoadingClothIcons = false;
+            if (!finishedLoadingClothIcons) return;
             for (int i = 0; i < clothIcons.Count; i++)
             {
+                if (clothIcons[i] == null)
+                {
+                    finishedLoadingClothIcons = false;
+                    return;
+                }
                 clothIcons[i].SetActive(i == clothType);
             }
             // if (BetterVRPluginHelper.VRCamera) clothIconCanvas.transform.LookAt(BetterVRPluginHelper.VRCamera.transform);
@@ -387,9 +395,14 @@ namespace BetterVR
             this.clothType = clothType;
         }
 
+        internal bool IsCharacterVisible()
+        {
+            return character != null && character.isActiveAndEnabled && character.visibleAll;
+        }
+
         internal bool IsInteractable()
         {
-            return character != null && character.isActiveAndEnabled && character.visibleAll && character.IsClothes(clothType);
+            return IsCharacterVisible() && character.IsClothes(clothType);
         }
 
         internal bool StripMore()
