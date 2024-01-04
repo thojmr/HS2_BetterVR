@@ -64,7 +64,7 @@ namespace BetterVR
                
             }
             else if (
-                transform.parent != bodyAttach &&
+                !IsAttachedToBody() &&
                 !ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) &&
                 !ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
@@ -74,7 +74,7 @@ namespace BetterVR
 
             if (ShouldAttachToBody()) AttachToBody();
 
-            if (transform.parent == bodyAttach)
+            if (IsAttachedToBody())
             {
                 CorrectBodyAttach(smooth: true);
                 RotateModelsTowardTarget();
@@ -157,6 +157,11 @@ namespace BetterVR
             transform.SetParent(bodyAttach, worldPositionStays: true);
         }
 
+        private bool IsAttachedToBody()
+        {
+            return bodyAttach != null && transform.parent == bodyAttach;
+        }
+
         private void CorrectBodyAttach(bool smooth = false)
         {
             var camera = BetterVRPluginHelper.VRCamera;
@@ -204,7 +209,7 @@ namespace BetterVR
             {
                 rotation = Quaternion.LookRotation(
                     transform.InverseTransformPoint(target.transform.position) - localPivot, Vector3.back);
-                rotation = Quaternion.Euler(90, 0, 0) * rotation;
+                rotation = rotation * Quaternion.Euler(90, 0, 0);
             }
             
             simpleModel.transform.localRotation = Quaternion.Slerp(simpleModel.transform.localRotation, rotation, Time.deltaTime * 4);
