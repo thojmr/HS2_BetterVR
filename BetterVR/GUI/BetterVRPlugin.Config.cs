@@ -18,6 +18,7 @@ namespace BetterVR
         public static ConfigEntry<float> PlayerLogScale { get; private set; }
         public static ConfigEntry<string> SqueezeToTurn { get; private set; }
         public static ConfigEntry<bool> AllowVerticalRotation { get; private set; }
+        public static ConfigEntry<bool> ToyMovesVerticallyWhenAttachedToBody { get; private set; }
         public static ConfigEntry<bool> FixWorldSizeScale { get; private set; }
         public static ConfigEntry<bool> MultipleRandomHeroine { get; private set; }
         public static ConfigEntry<bool> UsePrivacyScreen { get; private set; }
@@ -80,6 +81,10 @@ namespace BetterVR
 
             AllowVerticalRotation = Config.Bind<bool>(
                 "VR General", "Allow Vertical Rotation", false, new ConfigDescription("Allows rotating the world vertically."));
+
+            ToyMovesVerticallyWhenAttachedToBody = Config.Bind<bool>(
+                "VR General", "Toy Moves Vertically When Attached To Body", true,
+                new ConfigDescription("Unlocks toy vertical movement when it is attached to body."));
 
             PlayerLogScale = Config.Bind<float>(
                 "VR General", "Log2 of Player Scale", Mathf.Log(1.15f, 2f), 
@@ -147,10 +152,10 @@ namespace BetterVR
 
         }
 
-        // internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
-        // {
-        //     VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
-        // }
+        internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
+        {
+             VRControllerPointer.UpdateOneOrMoreCtrlPointers(SetVRControllerPointerAngle.Value);
+        }
 
         internal static bool IsTwoHandedTurnEnabled()
         {
