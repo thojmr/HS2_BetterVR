@@ -194,15 +194,8 @@ namespace BetterVR
                 return;
             }
 
-            byte clothType = grabbedStripCollider.clothType;
-            if (clothType < 0 || clothType > STRIP_INDICATOR_COLORS.Length)
-            {
-                stripIndicator.gameObject.SetActive(false);
-                return;
-            }
-
             stripIndicator.gameObject.SetActive(true);
-            stripIndicator.material.color = STRIP_INDICATOR_COLORS[clothType];
+            stripIndicator.material.color = STRIP_INDICATOR_COLORS[grabbedStripCollider.clothType];
  
             if (clothIcons == null) finishedLoadingClothIcons = false;
             if (!finishedLoadingClothIcons) return;
@@ -213,7 +206,7 @@ namespace BetterVR
                     finishedLoadingClothIcons = false;
                     return;
                 }
-                clothIcons[i].SetActive(i == clothType);
+                clothIcons[i].SetActive(i == grabbedStripCollider.clothType);
             }
             // if (BetterVRPluginHelper.VRCamera) clothIconCanvas.transform.LookAt(BetterVRPluginHelper.VRCamera.transform);
         }
@@ -228,7 +221,7 @@ namespace BetterVR
                 StripCollider stripCollider = collider.GetComponent<StripCollider>();
                 if (stripCollider == null || !stripCollider.IsInteractable()) continue;
                 if (stripCollider.stripLevel < minStripLevel || stripCollider.stripLevel > maxStripLevel) continue;
-                float distance = collider.transform.InverseTransformPoint(position).magnitude;
+                float distance = collider.transform.InverseTransformVector(position - collider.ClosestPoint(position)).magnitude;
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
@@ -241,16 +234,18 @@ namespace BetterVR
 
     internal struct ColliderAnatomy
     {
-        public ColliderAnatomy(byte clothType, Vector3? scale = null, Vector3? offset = null)
+        public ColliderAnatomy(byte clothType, Vector3? scale = null, Vector3? offset = null, float? radius = null)
         {
             this.clothType = clothType;
             this.scale = scale ?? Vector3.one;
             this.offset = offset ?? Vector3.zero;
+            this.radius = radius ?? 0.5f;
         }
 
         internal byte clothType;
         internal Vector3 scale;
         internal Vector3 offset;
+        internal float radius;
     }
 
     public class StripColliderRegistry : MonoBehaviour
@@ -259,7 +254,8 @@ namespace BetterVR
         private static readonly Dictionary<Regex, ColliderAnatomy> NAME_MATCHER_TO_ANATOMY = new Dictionary<Regex, ColliderAnatomy>
             {
                 { new Regex(@"Spine02$"), new ColliderAnatomy(0, scale: Vector3.one * 1.5f) }, // Top
-                { new Regex(@"Kosi01$|Siri_[LR]$"), new ColliderAnatomy(1, Vector3.one * 1.25f) }, // Bottom
+                { new Regex(@"Kosi01$"), new ColliderAnatomy(1, Vector3.one * 1.25f) }, // Bottom
+                { new Regex(@"Siri_[LR]$"), new ColliderAnatomy(1, Vector3.one * 1.25f, null, 0.75f) }, // Bottom
                 { new Regex(@"Belly_Mid_High"), new ColliderAnatomy(1, new Vector3(1f, 0.75f, 0.5f)) }, // Bottom
                 { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(2) }, // Top inner
                 { new Regex(@"Kokan$|agina_root$"), new ColliderAnatomy(3) }, // Under
@@ -329,20 +325,10 @@ namespace BetterVR
             {
                 if (!key.IsMatch(transform.name) || transform.name.Contains(COLLIDER_SUFFIX)) continue;
 
-                var anatomy = NAME_MATCHER_TO_ANATOMY[key];
-                GameObject colliderObject;
-                if (StripCollider.IsValidClothType(anatomy.clothType))
-                {
-                    var collider = StripCollider.Create(character, anatomy, transform, null);
-                    colliders.Add(collider);
-                    colliderObject = collider.gameObject;
-                    BetterVRPlugin.Logger.LogDebug("Added strip collider for " + transform.name + " on " + character.name);
-                }
-                else
-                {
-                    colliderObject = StripCollider.CreateSphere(anatomy, transform, null);
-                }
-                colliderObject.name = transform.name + COLLIDER_SUFFIX;
+                var collider = StripCollider.Create(character, NAME_MATCHER_TO_ANATOMY[key], transform, null);
+                collider.name = transform.name + COLLIDER_SUFFIX;
+                colliders.Add(collider);
+                BetterVRPlugin.Logger.LogDebug("Added strip collider for " + transform.name + " on " + character.name);
                 break;
         
             }
@@ -352,7 +338,7 @@ namespace BetterVR
     public class StripCollider : MonoBehaviour
     {
         public byte clothType { get; private set; }
-        public byte stripLevel { get { return character.fileStatus.clothesState[clothType]; } }
+        public byte stripLevel { get { return IsValidClothType(clothType) ? character.fileStatus.clothesState[clothType] : (byte)0; } }
         private ChaControl character;
 
         internal static bool IsValidClothType(byte i) { return 0 <= i && i < 8;  }
@@ -375,7 +361,9 @@ namespace BetterVR
             sphere.transform.parent = parent;
             sphere.transform.localPosition = anatomy.offset;
             sphere.transform.localRotation = Quaternion.identity;
-            sphere.GetOrAddComponent<Collider>().isTrigger = true;
+            var collider = sphere.GetOrAddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.radius = anatomy.radius;   
             var renderer = sphere.GetComponent<MeshRenderer>();
             if (shouldRender)
             {
@@ -402,7 +390,7 @@ namespace BetterVR
 
         internal bool IsInteractable()
         {
-            return IsCharacterVisible() && character.IsClothes(clothType);
+            return IsCharacterVisible() && IsValidClothType(clothType) && character.IsClothes(clothType);
         }
 
         internal bool StripMore()
