@@ -78,7 +78,7 @@ namespace BetterVR
                     ViveInput.GetPressDownEx<HandRole>(HandRole.RightHand, ControllerButton.AKey))
                 {
                     isRepositioning = false;
-                    transform.SetParent(controllerModel.parent);
+                    transform.SetParent(controllerModel.parent, worldPositionStays: true);
                     var offset = controllerModel.InverseTransformVector(transform.position - center);
                     if (handRole == HandRole.LeftHand)
                     {
