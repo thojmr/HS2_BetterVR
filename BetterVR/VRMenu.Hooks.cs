@@ -125,7 +125,7 @@ namespace BetterVR
                 {
                     if (info == null || info.nStatePtns == null) continue;
                     for (int i = 0; i < 7; i++) if (!info.nStatePtns.Contains(i)) info.nStatePtns.Add(i);
-                    BetterVRPlugin.Logger.LogInfo("Unlocked position: " + info.nameAnimation);
+                    // BetterVRPlugin.Logger.LogInfo("Unlocked position: " + info.nameAnimation);
                 }
             }
         }
@@ -148,7 +148,7 @@ namespace BetterVR
                     if (param.Name.Contains("Siri") || param.Name.Contains("siri"))
                     {
                         // Increase siri collision radius since the vanilla radius is too small for motion control interaction.
-                        param.CollisionRadius = Mathf.Max(param.CollisionRadius, 0.75f);
+                        param.CollisionRadius = Mathf.Max(param.CollisionRadius, 0.875f);
                     }
                 }
             }
