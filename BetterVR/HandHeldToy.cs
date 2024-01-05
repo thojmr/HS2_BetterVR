@@ -13,7 +13,6 @@ namespace BetterVR
 
         private static Transform bodyAttach;
         private Vector3 bodyAttachAngularVelocity;
-        private Vector3 bodyAttachVelocity;
 
         private int mode = 0;
         private GameObject simpleModel;
@@ -176,11 +175,11 @@ namespace BetterVR
 
             if (smooth) {
                 targetForward = Vector3.SmoothDamp(bodyAttach.forward, targetForward, ref bodyAttachAngularVelocity, 0.25f);
-                targetPosition = Vector3.SmoothDamp(bodyAttach.position, targetPosition, ref bodyAttachVelocity, 0.0625f);
+                targetPosition = Vector3.Lerp(bodyAttach.position, targetPosition, Time.deltaTime * 32);
             }
             else
             {
-                bodyAttachVelocity = bodyAttachAngularVelocity = Vector3.zero;
+                bodyAttachAngularVelocity = Vector3.zero;
             }
 
             bodyAttach.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(targetForward, bodyAttach.parent.up));
