@@ -36,6 +36,13 @@ namespace BetterVR
             }
         }
 
+        internal static HandRole GetHandRole(ViveRoleProperty roleProperty)
+        {
+            if (roleProperty == roleL) return HandRole.LeftHand;
+            if (roleProperty == roleR) return HandRole.RightHand;
+            return HandRole.Invalid;
+        }
+
         internal static void RecordVrOriginTransform()
         {
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
