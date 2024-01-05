@@ -26,7 +26,7 @@ namespace BetterVR
             if (!value) return;
 
             //If the pointer game object is active, then set the cursor angle
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer L active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
+            // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer L active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
 
             // Not working currently.
             // pluginInstance.StartCoroutine(
@@ -41,7 +41,7 @@ namespace BetterVR
             if (!value) return;
 
             //If the pointer game object is active, then set the cursor angle
-            if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer R active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
+            // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer R active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
 
             // Not working currently.
             // pluginInstance.StartCoroutine(
@@ -73,7 +73,7 @@ namespace BetterVR
             // This method works for Oculus controllers' thumbsticks too.
             var axis = BetterVRPluginHelper.GetRightHandPadStickCombinedOutput();
 
-            if (HSpeedGestureReceiver.shouldAttemptToStartAction) axis.y = 1;
+            axis.y += HSpeedGestureReceiver.outputY;
 
             if (axis == Vector2.zero) return true;
 
