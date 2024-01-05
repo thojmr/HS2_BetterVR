@@ -1,5 +1,5 @@
 using BepInEx.Configuration;
-using HarmonyLib;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BetterVR 
@@ -9,6 +9,8 @@ namespace BetterVR
         public static ConfigEntry<bool> EnableControllerColliders { get; private set; }
         public static ConfigEntry<float> ControllerColliderRadius { get; private set; }
         public static ConfigEntry<string> GestureStrip { get; private set; }
+
+        public static ConfigEntry<string> HandHSpeedGesture { get; private set; }
         public static ConfigEntry<float> HandHSpeedSensitivity { get; private set; }
 
         public static ConfigEntry<float> HapticFeedbackIntensity { get; private set; }
@@ -54,10 +56,16 @@ namespace BetterVR
                     "Enable holding trigger and dragging away to undress or holding trigger and dragging onto to dress",
                     new AcceptableValueList<string>(new string[] { "Disabled", "Left hand", "Right hand" })));
 
+            HandHSpeedGesture = Config.Bind<string>(
+                "VR General", "Hand H Speed Gesture", "Auto",
+                new ConfigDescription(
+                    "Enable controlling H action speed using hand motion",
+                    new AcceptableValueList<string>(new string[] { "Disabled", "Button-initiated", "Auto" })));
+
             HandHSpeedSensitivity = Config.Bind<float>(
                 "VR General", "Hand H Speed Sensitivty", 3,
                 new ConfigDescription(
-                    "Speed sensitivy when using hand movement to control H speed when touching certain parts, set to zero to disable this feature",
+                    "Speed sensitivy when using hand movement to control H speed when touching certain parts",
                     new AcceptableValueRange<float>(0f, 8f)));
 
             HapticFeedbackIntensity = Config.Bind<float>(
@@ -152,6 +160,16 @@ namespace BetterVR
         internal static bool IsOneHandedTurnEnabled()
         {
             return SqueezeToTurn.Value == "One-handed";
+        }
+
+        internal static bool IsHandHSpeedGestureEnabled()
+        {
+            return HandHSpeedGesture.Value != "Disabled";
+        }
+
+        internal static bool HandHSpeedGestureRequiresButtonPress()
+        {
+            return HandHSpeedGesture.Value == "Button-initiated";
         }
 
         internal void FixWorldSizeScale_SettingsChanged(object sender, System.EventArgs e) 
