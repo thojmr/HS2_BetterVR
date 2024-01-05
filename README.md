@@ -40,7 +40,7 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
 - Fixes the bug of vanilla game not detecting thumb stick input on some platforms.
 - Fixes the bug of vanilla game resets camera when changing animation even if the camera initialization option is toggled off.
 - Fixes the non-interactable silhouette palette in game settings.
-- Fixes the bug that all animations are frozen after opening mod config dialog and closing game settings dialog sometimmes.
+- Fixes the bug that all animations are frozen after opening mod config dialog and closing game settings dialog sometimes.
 
 
 ## How to install
