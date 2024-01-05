@@ -12,7 +12,7 @@ namespace BetterVR
     public partial class BetterVRPlugin : BaseUnityPlugin 
     {
         public const string GUID = "BetterVR";
-        public const string Version = "0.45";
+        public const string Version = "0.46";
         internal static new ManualLogSource Logger { get; private set; }
 
 #if DEBUG
@@ -104,10 +104,11 @@ namespace BetterVR
             if (!radialMenu.isActiveAndEnabled) return;
 
             int selectedItemIndex = radialMenu.selectedItemIndex;
-            bool isTriggerDown = ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Trigger);
+            // bool isTriggerDown = ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Trigger);
+            bool isTriggerUp = ViveInput.GetPressUpEx<HandRole>(handRole, ControllerButton.Trigger);
             if (!menuShouldBeActive) radialMenu.gameObject.SetActive(false);
 
-            if (menuShouldBeActive && !isTriggerDown) return;
+            if (menuShouldBeActive && !isTriggerUp) return;
 
             switch (selectedItemIndex)
             {
@@ -123,19 +124,17 @@ namespace BetterVR
                     BetterVRPluginHelper.FinishH();
                     break;
                 case 3:
-                    if (isTriggerDown) VRControllerInput.ResetWorldScale();
+                    if (isTriggerUp) VRControllerInput.ResetWorldScale();
                     break;
                 case 4:
                     BetterVRPluginHelper.CyclePlayerPDisplayMode();
                     VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 5:
-                    if (isTriggerDown)
-                    {
-                        BetterVRPluginHelper.ResetView();
-                        BetterVRPluginHelper.UpdateControllersVisibilty();
-                        VRControllerCollider.UpdateDynamicBoneColliders();
-                    }
+                    if (!isTriggerUp) break;
+                    BetterVRPluginHelper.ResetView();
+                    BetterVRPluginHelper.UpdateControllersVisibilty();
+                    VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 6:
                     // Toggle player body visibility.
@@ -144,6 +143,7 @@ namespace BetterVR
                     VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 7:
+                    if (!isTriggerUp) break;
                     if (handRole == HandRole.LeftHand) {
                         BetterVRPluginHelper.rightGlove?.StartRepositioning();
                     }
