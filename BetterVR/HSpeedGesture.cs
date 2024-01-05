@@ -100,8 +100,15 @@ namespace BetterVR
                 var frequency = hCtrl.isGaugeHit ? 120 : 35;
                 if (roleProperty == VRControllerInput.roleH)
                 {
-                    ViveInput.TriggerHapticVibration(VRControllerInput.roleL, frequency: frequency, amplitude: amplitude / 4);
-                    ViveInput.TriggerHapticVibration(VRControllerInput.roleR, frequency: frequency, amplitude: amplitude / 4);
+                    if (!(BetterVRPluginHelper.GetLeftHand()?.GetComponentInChildren<HSpeedGesture>()?.isTouching ?? false))
+                    {
+                        ViveInput.TriggerHapticVibration(VRControllerInput.roleL, frequency: frequency, amplitude: amplitude / 4);
+                    }
+                    if (!(BetterVRPluginHelper.GetRightHand()?.GetComponentInChildren<HSpeedGesture>()?.isTouching ?? false))
+                    {
+                        ViveInput.TriggerHapticVibration(VRControllerInput.roleR, frequency: frequency, amplitude: amplitude / 4);
+                    }
+
                 }
                 else
                 {
@@ -177,19 +184,16 @@ namespace BetterVR
                     if (hCtrl.isGaugeHit && speedInput > 0 && speedInput < 1.75f && hitArea != null)
                     {
                         // Reward mild collider touching is fast loops by stabilizing gauge hit.
-                        if (Random.Range(0f, 1f) < Time.fixedDeltaTime * 8) receiver.smoothTargetSpeed = Mathf.Lerp(hitArea.x, hitArea.y, 0.5f);
+                        if (Random.Range(0f, 1f) < Time.fixedDeltaTime * 4) receiver.smoothTargetSpeed = Mathf.Lerp(hitArea.x, hitArea.y, 0.5f);
                     }
                     return;
                 }
-                else if (receiver.smoothTargetSpeed > 0.495f)
+                else if (receiver.smoothTargetSpeed > HSpeedGestureReceiver.LOOP_01_DIVIDER - hCtrl.wheelActionCount)
                 {
                     // Do not let touching less sensitive parts affect speed during fast movement.
                     return;
                 }
             }
-
-            // Do not start motion from idle state using hand gesture except in Aibu mode.
-            if (hCtrl.loopType == -1 && !HSpeedGestureReceiver.IsAibu()) return;
 
             var targetSpeed = Mathf.Clamp(speedInput - 0.125f, 0, 2f);
 
@@ -206,15 +210,15 @@ namespace BetterVR
 
     public class HSpeedGestureReceiver : MonoBehaviour
     {
-        private const float IDLE_SPEED = -8f/64;
-        private const float MIN_EFFECTIVE_SPEED = -7f/64;
-        private const float LOOP_0_DEACTIVATION_THRESHOLD = -6f/64;
-        private const float LOOP_0_ACTIVATION_THRESHOLD = 0.5f;
-        private const float LOOP_01_DIVIDER = 1f; // This number is from the vanilla game
-        private const float LOOP_1_DEACTIVATION_THRESHOLD = 0.125f;
-        private const float LOOP_1_ACTIVATION_THRESHOLD = 1.5f;
+        internal const float IDLE_SPEED = -8f/64;
+        internal const float MIN_EFFECTIVE_SPEED = -7f/64;
+        internal const float LOOP_0_DEACTIVATION_THRESHOLD = -6f/64;
+        internal const float LOOP_0_ACTIVATION_THRESHOLD = 0.5f;
+        internal const float LOOP_01_DIVIDER = 1f; // This number is from the vanilla game
+        internal const float LOOP_1_DEACTIVATION_THRESHOLD = 0.125f;
+        internal const float LOOP_1_ACTIVATION_THRESHOLD = 1.5f;
 
-        internal static bool shouldAttemptToStartAction { get; private set; }
+        internal static float outputY { get; private set; }
         private static FieldInfo modeCtrlField;
 
         internal float smoothTargetSpeed = 0;
@@ -228,72 +232,55 @@ namespace BetterVR
         void FixedUpdate()
         {
             bool isEffective = (smoothTargetSpeed > MIN_EFFECTIVE_SPEED);
-
             (gaugeHitIndicator ?? (gaugeHitIndicator = new GaugeHitIndicator())).UpdateIndicators(isEffective);
 
             var hCtrl = Singleton<HSceneFlagCtrl>.Instance;
-            if (!hCtrl) return;
-
-            // Allow starting action using hand movement in Aibu mode.
-            shouldAttemptToStartAction = isEffective && IsAibu() && hCtrl.loopType == -1 && smoothTargetSpeed > LOOP_0_ACTIVATION_THRESHOLD;
-
-            if (!isEffective) return;
-
-            smoothTargetSpeed = Mathf.Lerp(smoothTargetSpeed, IDLE_SPEED, Time.fixedDeltaTime * GetAccelerationFactor(hCtrl));
-
-            if (IsMstrb()) {
-                if (hCtrl.loopType >= 0) hCtrl.speed = Mathf.Clamp(smoothTargetSpeed, 0, 2f);
+            if (!isEffective || !hCtrl)
+            {
+                outputY = 0;
                 return;
             }
 
-            switch (hCtrl.loopType)
-            {
-                case -1:
-                    break;
-                case 0:
-                    if (IsAibu() && smoothTargetSpeed < LOOP_0_DEACTIVATION_THRESHOLD)
-                    {
-                        // Allow stopping action with hand motion in Aibu mode.
-                        StopMotion(hCtrl);
-                        hCtrl.speed = 0;
-                    }
-                    else if (smoothTargetSpeed > LOOP_1_ACTIVATION_THRESHOLD)
-                    {
-                        // Increase speed to move onto loop stage 1.
-                        hCtrl.speed = LOOP_1_ACTIVATION_THRESHOLD;
-                    }
-                    else
-                    {
-                        // Clamp speed to stay in loop stage 0.
-                        hCtrl.speed = Mathf.Clamp(smoothTargetSpeed, 0, LOOP_01_DIVIDER - 0.01f);
-                    }
-                    break;
-                case 1:
-                    if (smoothTargetSpeed < LOOP_1_DEACTIVATION_THRESHOLD)
-                    {
-                        // Decrease speed to move back to loop stage 0
-                        hCtrl.speed = LOOP_1_DEACTIVATION_THRESHOLD;
-                    }
-                    else
-                    {
-                        // Clamp speed to stay in loop stage 1.
-                        hCtrl.speed = Mathf.Clamp(smoothTargetSpeed, LOOP_01_DIVIDER + 0.01f, 2f);
-                    }
-                    break;
-                case 2:
-                    hCtrl.speed = Mathf.Clamp(smoothTargetSpeed, 0, 2f);
-                    if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.99f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
-                    break;
-                case 3:
-                    smoothTargetSpeed = 0;
-                    break;
-            }
+            outputY = GetOutput(hCtrl);
+            smoothTargetSpeed = Mathf.Lerp(smoothTargetSpeed, IDLE_SPEED, Time.fixedDeltaTime * GetAccelerationFactor(hCtrl));
 
-            // smoothTargetSpeed = Mathf.Lerp(smoothTargetSpeed, IDLE_SPEED, Time.fixedDeltaTime * GetAccelerationFactor(hCtrl));
+            if (IsAibu() && smoothTargetSpeed < LOOP_0_DEACTIVATION_THRESHOLD && hCtrl.loopType >= 0 && hCtrl.loopType <= 2)
+            {
+                // Allow stopping action with hand motion in Aibu mode.
+                StopMotion(hCtrl);
+            }
+            
+            if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.99f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
 
             // BetterVRPlugin.Logger.LogWarning(
             //    "H Loop type: " +  hCtrl.loopType + " current speed: " + hCtrl.speed +
             //    " smooth target speed: " + smoothTargetSpeed);
+        }
+
+        internal float GetOutput(HSceneFlagCtrl hCtrl)
+        {
+            if (hCtrl.loopType == -1)
+            {
+                // Allow starting action using hand movement in Aibu mode.
+                if (IsAibu() && smoothTargetSpeed > LOOP_0_ACTIVATION_THRESHOLD) return 1;
+                return 0;
+            }
+
+            float bufferRadius = hCtrl.wheelActionCount;
+            var clampedSpeed = smoothTargetSpeed;
+            if (hCtrl.speed < LOOP_01_DIVIDER)
+            {
+                if (clampedSpeed < LOOP_1_ACTIVATION_THRESHOLD) clampedSpeed = Mathf.Min(clampedSpeed, LOOP_01_DIVIDER - bufferRadius);
+            }
+            else
+            {
+                if (clampedSpeed > LOOP_1_DEACTIVATION_THRESHOLD) clampedSpeed = Mathf.Max(clampedSpeed, LOOP_01_DIVIDER + bufferRadius);
+            }
+
+            if (clampedSpeed >= hCtrl.speed + bufferRadius) return 1;
+            if (clampedSpeed <= hCtrl.speed - bufferRadius) return -1;
+
+            return 0;
         }
 
         internal float GetAccelerationFactor(HSceneFlagCtrl ctrl)
@@ -313,18 +300,11 @@ namespace BetterVR
             return anim != null && anim is Aibu;
         }
 
-        internal static bool IsMstrb()
-        {
-            var anim = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetProcBase();
-            return anim != null && anim is Masturbation;
-        }
-
         internal static bool IsHoushi()
         {
             var anim = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetProcBase();
             return anim != null && anim is Houshi;
         }
-
 
         internal bool Spnk(HScene hScene, HSceneFlagCtrl ctrl)
         {
