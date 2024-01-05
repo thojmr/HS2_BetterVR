@@ -144,6 +144,12 @@ namespace BetterVR
             HSceneFinishPatch();
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), nameof(FeelHit.GetHitArea))]
+        internal static void FeelHitAreaRecorder(Vector2 __result)
+        {
+            HSpeedGesture.hitArea = __result;
+        }
+
         [HarmonyPrefix, HarmonyPatch(typeof(Illusion.Component.UI.ColorPicker.Info), "SetImagePosition")]
         internal static void ColorPickerFix(Illusion.Component.UI.ColorPicker.Info __instance, PointerEventData cursorPos)
         {
