@@ -232,7 +232,7 @@ namespace BetterVR
         }
     }
 
-    internal struct ColliderAnatomy
+    public struct ColliderAnatomy
     {
         public ColliderAnatomy(byte clothType, Vector3? scale = null, Vector3? offset = null, float? radius = null)
         {
@@ -264,12 +264,13 @@ namespace BetterVR
                 { new Regex(@"LegLow01_[LR]$"), new ColliderAnatomy(5, scale: Vector3.one * 1.25f) }, // Pants
                 { new Regex(@"LegLowRoll_[LR]$"), new ColliderAnatomy(6) }, // Socks
                 { new Regex(@"Foot01_[LR]$"), new ColliderAnatomy(7) }, // Shoes
-                { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(8, Vector3.one * 1.25f) } // No cloth, for touching only
+                { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(8, Vector3.one * 1.25f) }, // No cloth, for touching only
+                { new Regex(@"N_Mouth$"), new ColliderAnatomy(8, Vector3.one * 0.5f) } // No cloth, for touching only
             };
 
         private bool hasAddedColliders = false;
         private ChaControl character;
-        private List<StripCollider> colliders = new List<StripCollider>();
+        private List<InteractionCollider> colliders = new List<InteractionCollider>();
 
         internal void Init(ChaControl chaControl)
         {
@@ -292,7 +293,7 @@ namespace BetterVR
             RemoveColliders();
         }
 
-        public void RemoveAndDestroyCollider(StripCollider collider)
+        public void RemoveAndDestroyCollider(InteractionCollider collider)
         {
             colliders.Remove(collider);
             if (collider.gameObject) Destroy(collider.gameObject);
@@ -300,7 +301,7 @@ namespace BetterVR
 
         private void RemoveColliders()
         {
-            foreach (StripCollider collider in colliders)
+            foreach (var collider in colliders)
             {
                 if (collider == null || collider.gameObject == null) continue;
                 GameObject.Destroy(collider.gameObject);
@@ -328,64 +329,47 @@ namespace BetterVR
                 var collider = StripCollider.Create(character, NAME_MATCHER_TO_ANATOMY[key], transform, null);
                 collider.name = transform.name + COLLIDER_SUFFIX;
                 colliders.Add(collider);
-                BetterVRPlugin.Logger.LogDebug("Added strip collider for " + transform.name + " on " + character.name);
+                BetterVRPlugin.Logger.LogDebug("Added interaction collider for " + transform.name + " on " + character.name);
                 break;
         
             }
         }
     }
 
-    public class StripCollider : MonoBehaviour
+    public class StripCollider : InteractionCollider
     {
         public byte clothType { get; private set; }
         public byte stripLevel { get { return IsValidClothType(clothType) ? character.fileStatus.clothesState[clothType] : (byte)0; } }
-        private ChaControl character;
 
-        internal static bool IsValidClothType(byte i) { return 0 <= i && i < 8;  }
+        internal static bool IsValidClothType(byte i) { return 0 <= i && i < 8; }
 
-        internal static StripCollider Create(
+        internal static new InteractionCollider Create(
             ChaControl character, ColliderAnatomy anatomy,
             Transform parent, Transform scaleReference, bool shouldRender = false)
         {
-            StripCollider collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<StripCollider>();
-            collider.Init(character, anatomy.clothType);
-            return collider;
-        }
+            if (!IsValidClothType(anatomy.clothType))
+            {
+                return InteractionCollider.Create(character, anatomy, parent, scaleReference, shouldRender);
+            }
 
-        internal static GameObject CreateSphere(
-            ColliderAnatomy anatomy, Transform parent, Transform scaleReference, bool shouldRender = false)
-        {
-            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            sphere.transform.parent = scaleReference;
-            sphere.transform.localScale = anatomy.scale;
-            sphere.transform.parent = parent;
-            sphere.transform.localPosition = anatomy.offset;
-            sphere.transform.localRotation = Quaternion.identity;
-            var collider = sphere.GetOrAddComponent<SphereCollider>();
-            collider.isTrigger = true;
-            collider.radius = anatomy.radius;   
-            var renderer = sphere.GetComponent<MeshRenderer>();
+            var collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<StripCollider>();
+            collider.Init(character, anatomy.clothType);
+            var renderer = collider.GetComponent<MeshRenderer>();
             if (shouldRender)
             {
-                renderer.material.color =
-                    IsValidClothType(anatomy.clothType) ? StripUpdater.STRIP_INDICATOR_COLORS[anatomy.clothType] : Color.gray;
+                renderer.material.color = StripUpdater.STRIP_INDICATOR_COLORS[anatomy.clothType];
             }
             else
             {
-                Object.Destroy(renderer);
+                Destroy(renderer);
             }
-            return sphere;
+            return collider;
         }
 
         internal void Init(ChaControl character, byte clothType)
         {
-            this.character = character;
+            base.Init(character);
             this.clothType = clothType;
-        }
-
-        internal bool IsCharacterVisible()
-        {
-            return character != null && character.isActiveAndEnabled && character.visibleAll;
         }
 
         internal bool IsInteractable()
@@ -410,6 +394,54 @@ namespace BetterVR
         internal void Clothe()
         {
             character.SetClothesState(clothType, 0);
+        }
+    }
+
+    public class InteractionCollider : MonoBehaviour
+    {
+        protected ChaControl character;
+
+        internal static InteractionCollider Create(
+            ChaControl character, ColliderAnatomy anatomy,
+            Transform parent, Transform scaleReference, bool shouldRender = false)
+        {
+            var collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<InteractionCollider>();
+            collider.Init(character);
+            return collider;
+        }
+
+        protected static GameObject CreateSphere(
+            ColliderAnatomy anatomy, Transform parent, Transform scaleReference, bool shouldRender = false)
+        {
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.transform.parent = scaleReference;
+            sphere.transform.localScale = anatomy.scale;
+            sphere.transform.parent = parent;
+            sphere.transform.localPosition = anatomy.offset;
+            sphere.transform.localRotation = Quaternion.identity;
+            var collider = sphere.GetOrAddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.radius = anatomy.radius;   
+            var renderer = sphere.GetComponent<MeshRenderer>();
+            if (shouldRender)
+            {
+                renderer.material.color = Color.gray;
+            }
+            else
+            {
+                Object.Destroy(renderer);
+            }
+            return sphere;
+        }
+
+        internal void Init(ChaControl character)
+        {
+            this.character = character;
+        }
+
+        internal bool IsCharacterVisible()
+        {
+            return character != null && character.isActiveAndEnabled && character.visibleAll;
         }
     }
 }
