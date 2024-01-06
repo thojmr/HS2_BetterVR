@@ -23,10 +23,10 @@ namespace BetterVR
         public static GameObject VROrigin;
         public static UnityEvent recenterVR { set; private get; }
 
-        private static Camera _VRCamera;
         private static GameObject simplePClone;
         private static int pDisplayMode = 1; // 0: invisible, 1: full, 2: silhouette
 
+        private static Camera _VRCamera;
         public static Camera VRCamera
         {
             get
@@ -67,23 +67,43 @@ namespace BetterVR
             }
         }
 
+        private static Transform _leftControllerCenter;
+        private static Transform _rightControllerCenter;
+        internal static Transform leftControllerCenter
+        {
+            get
+            {
+                if (CreateTransformIfNotPresent(ref _leftControllerCenter, parent: FindLeftControllerRenderModel(out var center)))
+                {
+                    _leftControllerCenter.name = "LeftControllerCenter";
+                    _leftControllerCenter.position = center;
+                }
+                return _leftControllerCenter;
+            }
+        }
+        internal static Transform rightControllerCenter
+        {
+            get
+            {
+                if (CreateTransformIfNotPresent(ref _rightControllerCenter, parent: FindRightControllerRenderModel(out var center)))
+                {
+                    _rightControllerCenter.name = "RightControllerCenter";
+                    _rightControllerCenter.position = center;
+                }
+                return _rightControllerCenter;
+            }
+        }
+
         private static Transform _leftCursorAttach;
         private static Transform _rightCursorAttach;
         internal static Transform leftCursorAttach
         {
             get
             {
-                if (!_leftCursorAttach) _leftCursorAttach = new GameObject("LeftCursorAttach").transform;
-                var controllerModel = FindLeftControllerRenderModel(out var center);
-                if (controllerModel)
+                if (CreateTransformIfNotPresent(ref _leftCursorAttach, parent: leftControllerCenter))
                 {
-                    if (_leftCursorAttach.parent != controllerModel.parent)
-                    {
-                        _leftCursorAttach.parent = controllerModel.parent;
-                        _leftCursorAttach.localScale = Vector3.one;
-                        _leftCursorAttach.localRotation = Quaternion.identity;
-                    }
-                    _leftCursorAttach.position = center + controllerModel.TransformVector(Vector3.forward * 0.1f);
+                    _leftCursorAttach.name = "LeftCursorAttach";
+                    _leftCursorAttach.localPosition = Vector3.forward * 0.1f;
                 }
                 return _leftCursorAttach;
             }
@@ -92,17 +112,10 @@ namespace BetterVR
         {
             get
             {
-                if (!_rightCursorAttach) _rightCursorAttach = new GameObject("RightCursorAttach").transform;
-                var controllerModel = FindRightControllerRenderModel(out var center);
-                if (controllerModel)
+                if (CreateTransformIfNotPresent(ref _rightCursorAttach, parent: rightControllerCenter))
                 {
-                    if (_rightCursorAttach.parent != controllerModel.parent)
-                    {
-                        _rightCursorAttach.parent = controllerModel.parent;
-                        _rightCursorAttach.localScale = Vector3.one;
-                        _rightCursorAttach.localRotation = Quaternion.identity;
-                    }
-                    _rightCursorAttach.position = center + controllerModel.TransformVector(Vector3.forward * 0.125f);
+                    _rightCursorAttach.name = "RightCursorAttach";
+                    _rightCursorAttach.localPosition = Vector3.forward * 0.1f;
                 }
                 return _rightCursorAttach;
             }
@@ -241,7 +254,7 @@ namespace BetterVR
             if (!player || !player.loadEnd) return;
 
             bool shouldUseSimpleP = Manager.Config.HData.Son && pDisplayMode == 2;
-            bool shouldUseRegularP = Manager.Config.HData.Son && pDisplayMode == 1;
+            bool shouldUseFullP = Manager.Config.HData.Son && pDisplayMode == 1;
 
             var simpleBodyEtc = player.cmpSimpleBody?.targetEtc;
             GameObject simpleBody = simpleBodyEtc?.objBody;
@@ -252,7 +265,6 @@ namespace BetterVR
                     GameObject.Destroy(simplePClone);
                     simplePClone = null;
                 }
-
             }
 
             if (shouldUseSimpleP && simplePClone == null)
@@ -287,10 +299,10 @@ namespace BetterVR
             var regularBodyEtc = player.cmpBody?.targetEtc;
             if (regularBodyEtc != null)
             {
-                regularBodyEtc.objMNPB?.SetActive(shouldUseRegularP);
-                regularBodyEtc.objDanTop?.SetActive(shouldUseRegularP);
-                regularBodyEtc.objDanSao?.SetActive(shouldUseRegularP);
-                regularBodyEtc.objDanTama?.SetActive(shouldUseRegularP);
+                regularBodyEtc.objMNPB?.SetActive(shouldUseFullP);
+                regularBodyEtc.objDanTop?.SetActive(shouldUseFullP);
+                regularBodyEtc.objDanSao?.SetActive(shouldUseFullP);
+                regularBodyEtc.objDanTama?.SetActive(shouldUseFullP);
             }
         }
 
@@ -319,26 +331,6 @@ namespace BetterVR
             if (!_rightGlove) _rightGlove = VRGlove.CreateRightGlove();
         }
 
-        internal static bool LeftHandTriggerPress()
-        {
-            return ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Trigger);
-        }
-
-        internal static bool LeftHandGripPress()
-        {
-            return ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip);
-        }
-
-        internal static bool RightHandTriggerPress()
-        {
-            return ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Trigger);
-        }
-
-        internal static bool RightHandGripPress()
-        {
-            return ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip);
-        }
-
         internal static void UpdatePrivacyScreen(Color? color = null)
         {
             EnsurePrivacyScreen().gameObject.SetActive(BetterVRPlugin.UsePrivacyScreen.Value);
@@ -353,47 +345,64 @@ namespace BetterVR
             return output;
         }
 
-        internal static Transform FindLeftControllerRenderModel(out Vector3 center)
-        {
-            return FindControllerRenderModel(GetLeftHand(), out center);
-        }
-
-        internal static Transform FindRightControllerRenderModel(out Vector3 center)
-        {
-            return FindControllerRenderModel(GetRightHand(), out center);
-        }
-
-        internal static Transform FindControllerRenderModel(GameObject hand, out Vector3 center)
-        {
-            center = Vector3.zero;
-
-            if (hand == null) return null;
-
-            Transform renderModel = hand.transform.FindLoop("Model") ?? hand.transform.FindLoop("OpenVRRenderModel");
-            if (!renderModel) return null;
-            
-            var meshFilter = renderModel.GetComponentInChildren<MeshFilter>();
-            center =
-                meshFilter ? meshFilter.transform.TransformPoint(meshFilter.mesh.bounds.center) : hand.transform.position;
-
-            return renderModel;
-        }
-
         internal static void UpdateControllersVisibilty()
         {
             UpdateControllerVisibilty(FindControllerRenderModel(GetLeftHand(), out var lCenter));
             UpdateControllerVisibilty(FindControllerRenderModel(GetRightHand(), out var rCenter));
         }
 
+        private static bool CreateTransformIfNotPresent(ref Transform transform, Transform parent)
+        {
+            if (parent == null)
+            {
+                if (transform != null) GameObject.Destroy(transform.gameObject);
+                transform = null;
+                return false;
+            }
+
+            if (transform != null && transform.parent == parent) return false;
+
+            if (transform != null) GameObject.Destroy(transform.gameObject);
+
+            transform = new GameObject().transform;
+            transform.parent = parent;
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+
+            return true;
+        }
+
+        private static Transform FindLeftControllerRenderModel(out Vector3 center)
+        {
+            return FindControllerRenderModel(GetLeftHand(), out center);
+        }
+
+        private static Transform FindRightControllerRenderModel(out Vector3 center)
+        {
+            return FindControllerRenderModel(GetRightHand(), out center);
+        }
+
+        private static Transform FindControllerRenderModel(GameObject controller, out Vector3 center)
+        {
+            center = Vector3.zero;
+
+            if (controller == null) return null;
+
+            Transform renderModel = controller.transform.FindLoop("Model") ?? controller.transform.FindLoop("OpenVRRenderModel");
+            if (!renderModel) return null;
+            
+            var meshFilter = renderModel.GetComponentInChildren<MeshFilter>();
+            center =
+                meshFilter ? meshFilter.transform.TransformPoint(meshFilter.mesh.bounds.center) : controller.transform.position;
+
+            return renderModel;
+        }
+
         private static void UpdateControllerVisibilty(Transform renderModel)
         {
             if (!renderModel) return;
-
-            bool shouldShowController =
-                !VRGlove.isShowingGloves ||
-                BetterVRPlugin.HandDisplay.Value == "Controllers" ||
-                BetterVRPlugin.HandDisplay.Value == "GlovesAndControllers";
-            
+            bool shouldShowController = !VRGlove.isShowingGloves || !BetterVRPlugin.IsHidingControllersEnabled();
             var renderers = renderModel.GetComponentsInChildren<MeshRenderer>();
             foreach (var renderer in renderers) renderer.enabled = shouldShowController;
         }
