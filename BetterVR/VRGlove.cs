@@ -35,15 +35,12 @@ namespace BetterVR
 
         void Update()
         {
-            Vector3 center;
-            Transform controllerModel =
+            Transform controllerCenter =
                 handRole == HandRole.RightHand ?
-                BetterVRPluginHelper.FindRightControllerRenderModel(out center) :
-                BetterVRPluginHelper.FindLeftControllerRenderModel(out center);
+                BetterVRPluginHelper.rightControllerCenter :
+                BetterVRPluginHelper.leftControllerCenter;
 
-            bool shouldShowHand =
-                (BetterVRPlugin.HandDisplay.Value == "Gloves" || BetterVRPlugin.HandDisplay.Value == "GlovesAndControllers") &&
-                controllerModel != null;
+            bool shouldShowHand = BetterVRPlugin.GlovesEnabled() && controllerCenter != null;
             bool isShowingHand = gloveRenderer.gameObject.activeSelf;
 
             gloveRenderer.gameObject.SetActive(shouldShowHand);
@@ -58,6 +55,8 @@ namespace BetterVR
                 // Parent the renderer to camera to make sure that the gloves stay in the renderer's bounds and do not get culled.
                 gloveRenderer.transform.parent = camera.transform;
                 gloveRenderer.transform.localPosition = Vector3.zero;
+                var bounds = gloveRenderer.GetComponent<SkinnedMeshRenderer>().bounds;
+                BetterVRPlugin.Logger.LogInfo("Glove renderer bounds: " + bounds);
             }
 
             if (isRepositioning)
@@ -65,10 +64,12 @@ namespace BetterVR
                 if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) ||
                     ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
                 {
-                    if (transform.parent != controllerModel.parent) transform.SetParent(controllerModel.parent, worldPositionStays: true);
+                    // Pause repositioning
+                    if (transform.parent != controllerCenter) transform.SetParent(controllerCenter, worldPositionStays: true);
                 }
                 else
                 {
+                    // Resume repositioning
                     if (transform.parent != null) transform.SetParent(null, worldPositionStays: true);
                 }
 
@@ -78,25 +79,31 @@ namespace BetterVR
                     ViveInput.GetPressDownEx<HandRole>(HandRole.RightHand, ControllerButton.AKey))
                 {
                     isRepositioning = false;
-                    transform.SetParent(controllerModel.parent, worldPositionStays: true);
-                    var offset = controllerModel.InverseTransformVector(transform.position - center);
+                    transform.SetParent(controllerCenter, worldPositionStays: true);
                     if (handRole == HandRole.LeftHand)
                     {
                         BetterVRPlugin.LeftGloveRotation.Value = transform.localRotation;
-                        BetterVRPlugin.LeftGloveOffset.Value = offset;
+                        BetterVRPlugin.LeftGloveOffset.Value = transform.localPosition;
                     }
                     else
                     {
                         BetterVRPlugin.RightGloveRotation.Value = transform.localRotation;
-                        BetterVRPlugin.RightGloveOffset.Value = offset;
+                        BetterVRPlugin.RightGloveOffset.Value = transform.localPosition;
                     }
-                    BetterVRPlugin.Logger.LogInfo("Set hand offset: " + offset + " rotation: " + transform.localRotation.eulerAngles);
+                    BetterVRPlugin.Logger.LogInfo("Set hand offset: " + transform.localPosition + " rotation: " + transform.localRotation.eulerAngles);
                 }
 
                 return;
             }
 
-            if (transform.parent != controllerModel.parent) transform.parent = controllerModel.parent;
+            if (transform.parent != controllerCenter)
+            {
+                transform.parent = controllerCenter;
+                transform.localRotation =
+                    handRole == HandRole.RightHand ? BetterVRPlugin.RightGloveRotation.Value : BetterVRPlugin.LeftGloveRotation.Value;
+                transform.localPosition =
+                    handRole == HandRole.RightHand ? BetterVRPlugin.RightGloveOffset.Value : BetterVRPlugin.LeftGloveOffset.Value;
+            }
 
             if (transform.parent == null) return;
 
@@ -104,9 +111,8 @@ namespace BetterVR
             transform.localScale = Vector3.one * BetterVRPlugin.GloveScale.Value;
             transform.localRotation =
                 handRole == HandRole.RightHand ? BetterVRPlugin.RightGloveRotation.Value : BetterVRPlugin.LeftGloveRotation.Value;
-            Vector3 offsetFromCenter =
+            transform.localPosition =
                 handRole == HandRole.RightHand ? BetterVRPlugin.RightGloveOffset.Value : BetterVRPlugin.LeftGloveOffset.Value;
-            transform.position = center + controllerModel.transform.TransformVector(offsetFromCenter);
         }
 
         private static void LoadGloves()
