@@ -24,35 +24,23 @@ namespace BetterVR
         internal static void LaserPointer_SetLeftLaserPointerActive(ControllerManager __instance, bool value)
         {
             if (!value) return;
-
-            //If the pointer game object is active, then set the cursor angle
-            // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer L active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
-
-            // Not working currently.
-            // pluginInstance.StartCoroutine(
-            //    VRControllerPointer.SetAngleAfterTime(BetterVRPlugin.SetVRControllerPointerAngle.Value, BetterVRPluginHelper.VR_Hand.left)
-            // );
-
+            pluginInstance.StartCoroutine(
+                VRControllerPointer.SetLaserAngleWithDelay(BetterVRPluginHelper.VR_Hand.left));
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(ControllerManager), nameof(ControllerManager.SetRightLaserPointerActive), typeof(bool))]
         internal static void LaserPointer_SetRightLaserPointerActive(ControllerManager __instance, bool value)
         {
             if (!value) return;
-
-            //If the pointer game object is active, then set the cursor angle
-            // if (BetterVRPlugin.debugLog) BetterVRPlugin.Logger.LogInfo($" LaserPointer R active, setting angle to {BetterVRPlugin.SetVRControllerPointerAngle.Value}");
-
-            // Not working currently.
-            // pluginInstance.StartCoroutine(
-            //    VRControllerPointer.SetAngleAfterTime(BetterVRPlugin.SetVRControllerPointerAngle.Value, BetterVRPluginHelper.VR_Hand.right)
-            // );
+            pluginInstance.StartCoroutine(
+                VRControllerPointer.SetLaserAngleWithDelay(BetterVRPluginHelper.VR_Hand.right));
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(HS2VR.GripMoveCrtl), "ControllerMove")]
         internal static bool ControllerMovePatch()
         {
-            if (!BetterVRPluginHelper.LeftHandGripPress() && !BetterVRPluginHelper.RightHandGripPress())
+            if (!ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) &&
+                !ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
                 // If no grip is pressed, allow vanilla logic to handle turning.
                 return true;
