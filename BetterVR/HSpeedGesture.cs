@@ -7,9 +7,11 @@ namespace BetterVR
 {
     public class HSpeedGesture : MonoBehaviour
     {
+        private static readonly Regex ULTRA_SENSITIVE_COLLIDER_NAME_MATCHER = new Regex(@"agina|okan");
         private static readonly Regex SENSITIVE_COLLIDER_NAME_MATCHER = new Regex(@"[Mm]une|[Cc]hest|agina|okan");
-        private static readonly Regex MILD_COLLIDER_NAME_MATCHER = new Regex(@"[Nn]eck|[Ll]eg|[Ss]iri|[Bb]elly");
+        private static readonly Regex MILD_COLLIDER_NAME_MATCHER = new Regex(@"[Nn]eck|[Ll]eg|[Ss]iri|[Bb]elly|[Mm]outh");
         private static readonly Regex SPNKABLE_COLLIDER_NAME_MATCHER = new Regex(@"[Ll]eg|[Ss]iri");
+        private static readonly Regex MOUTH_MATCHER = new Regex(@"[Mm]outh");
 
         internal ViveRoleProperty roleProperty;
         internal Transform capsuleStart;
@@ -154,8 +156,8 @@ namespace BetterVR
             Collider[] colliders = Physics.OverlapCapsule(capsuleStart.position, capsuleEnd.position, activationRadius * scale);
             foreach (var collider in colliders)
             {
-                var stripCollider = collider.GetComponent<StripCollider>();
-                if (stripCollider == null || !stripCollider.IsCharacterVisible()) continue;
+                var interactionCollider = collider.GetComponent<InteractionCollider>();
+                if (interactionCollider == null || !interactionCollider.IsCharacterVisible()) continue;
 
                 if (SENSITIVE_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
                 {
@@ -166,6 +168,7 @@ namespace BetterVR
 
                 if (MILD_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
                 {
+                    if (roleProperty != VRControllerInput.roleH && MOUTH_MATCHER.IsMatch(collider.name)) continue;
                     interactingCollider = collider;
                     isColliderSensitive = false;
                 }
@@ -196,9 +199,16 @@ namespace BetterVR
             }
 
             var targetSpeed = Mathf.Clamp(speedInput - 0.125f, 0, 2f);
-
-            // Curve speed output to require faster movement.
-            if (hCtrl.loopType == 2) targetSpeed *= (targetSpeed / 2);
+            
+            if (hCtrl.loopType == 2)
+            {
+                // Curve speed output to require faster movement.
+                targetSpeed *= (targetSpeed / 2);
+            }
+            else if (ULTRA_SENSITIVE_COLLIDER_NAME_MATCHER.IsMatch(interactingCollider.name)) {
+                // Curve speed output to require slower movement.
+                targetSpeed = Mathf.Sqrt(targetSpeed * 2);
+            }
 
             if (targetSpeed <= receiver.smoothTargetSpeed) return;
 
@@ -217,6 +227,8 @@ namespace BetterVR
         internal const float LOOP_01_DIVIDER = 1f; // This number is from the vanilla game
         internal const float LOOP_1_DEACTIVATION_THRESHOLD = 0.125f;
         internal const float LOOP_1_ACTIVATION_THRESHOLD = 1.5f;
+        internal const float ORIGINAL_SPEED_GAUGE_RATE = 0.01f;
+        internal const float CUSTOM_SPEED_GAUGE_RATE = 1f / 256;
 
         internal static float outputY { get; private set; }
         private static FieldInfo modeCtrlField;
@@ -235,7 +247,12 @@ namespace BetterVR
             (gaugeHitIndicator ?? (gaugeHitIndicator = new GaugeHitIndicator())).UpdateIndicators(isEffective);
 
             var hCtrl = Singleton<HSceneFlagCtrl>.Instance;
-            if (!isEffective || !hCtrl)
+            if (!hCtrl) return;
+
+            // Reduce feel increase rate for realism.
+            hCtrl.speedGuageRate = isEffective ? CUSTOM_SPEED_GAUGE_RATE : ORIGINAL_SPEED_GAUGE_RATE;
+
+            if (!isEffective)
             {
                 outputY = 0;
                 return;
@@ -249,7 +266,7 @@ namespace BetterVR
                 // Allow stopping action with hand motion in Aibu mode.
                 StopMotion(hCtrl);
             }
-            
+
             if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.99f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
 
             // BetterVRPlugin.Logger.LogWarning(
