@@ -91,11 +91,11 @@ namespace BetterVR
                 // Bring the newly appeared object into range of hand.
                 if (isRightHand)
                 {
-                    AttachAndBringToRangeOf(BetterVRPluginHelper.leftControllerCenter);
+                    AttachAndBringToRangeOf(BetterVRPluginHelper.rightControllerCenter);
                 }
                 else
                 {
-                    AttachAndBringToRangeOf(BetterVRPluginHelper.rightControllerCenter);
+                    AttachAndBringToRangeOf(BetterVRPluginHelper.leftControllerCenter);
                 }
                 transform.SetParent(null, worldPositionStays: true);
             }
