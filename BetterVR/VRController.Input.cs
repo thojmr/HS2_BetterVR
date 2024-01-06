@@ -78,7 +78,8 @@ namespace BetterVR
             }
 
             // Stop attempting to restore camera transform if there is any input that might move the camera.
-            if (BetterVRPluginHelper.LeftHandGripPress() || BetterVRPluginHelper.RightHandGripPress() ||
+            if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) ||
+                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip) ||
                 Mathf.Abs(BetterVRPluginHelper.GetRightHandPadStickCombinedOutput().x) > 0.25f || !Manager.HSceneManager.isHScene)
             {
                 ClearRecordedVrOriginTransform();
@@ -93,12 +94,18 @@ namespace BetterVR
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
             if (!vrOrigin) return;
 
-            bool leftHandFullGrab = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.LeftHandTriggerPress();
-            bool rightHandFullGrab = BetterVRPluginHelper.RightHandGripPress() && BetterVRPluginHelper.RightHandTriggerPress();
-            bool bothGrips = BetterVRPluginHelper.LeftHandGripPress() && BetterVRPluginHelper.RightHandGripPress();
+            bool leftHandTriggerAndGrip =
+                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Trigger) &&
+                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip);
+            bool rightHandTriggerAndGrip =
+                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Trigger) &&
+                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip);
+            bool bothGrips =
+                ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) &&
+                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip);
             
             bool twoHandedTurn = BetterVRPlugin.IsTwoHandedTurnEnabled() && bothGrips;
-            bool shouldScale = leftHandFullGrab && rightHandFullGrab;
+            bool shouldScale = leftHandTriggerAndGrip && rightHandTriggerAndGrip;
 
             twoHandedWorldGrab.enabled = shouldScale || twoHandedTurn;
             twoHandedWorldGrab.canScale = shouldScale;
@@ -106,20 +113,16 @@ namespace BetterVR
             bool allowOneHandedWorldGrab =
                 !twoHandedWorldGrab.enabled && (BetterVRPlugin.IsOneHandedTurnEnabled() || BetterVRPlugin.IsTwoHandedTurnEnabled());
 
-            // Check right hand
-            var rightControllerModel = BetterVRPluginHelper.FindRightControllerRenderModel(out var rCenter);
-            if (rightControllerModel)
+            if (BetterVRPluginHelper.leftControllerCenter)
             {
-                rightControllerModel.GetOrAddComponent<OneHandedWorldGrab>().enabled =
-                    rightHandFullGrab && !leftHandFullGrab && allowOneHandedWorldGrab;
+                BetterVRPluginHelper.leftControllerCenter.GetOrAddComponent<OneHandedWorldGrab>().enabled =
+                    leftHandTriggerAndGrip && !rightHandTriggerAndGrip && allowOneHandedWorldGrab;
             }
 
-            // Check left hand
-            var leftControllerModel = BetterVRPluginHelper.FindLeftControllerRenderModel(out var lCenter);
-            if (leftControllerModel)
+            if (BetterVRPluginHelper.rightControllerCenter)
             {
-                leftControllerModel.GetOrAddComponent<OneHandedWorldGrab>().enabled =
-                    leftHandFullGrab && !rightHandFullGrab && allowOneHandedWorldGrab;
+                BetterVRPluginHelper.rightControllerCenter.GetOrAddComponent<OneHandedWorldGrab>().enabled =
+                    rightHandTriggerAndGrip && !leftHandTriggerAndGrip && allowOneHandedWorldGrab;
             }
 
             if (!isDraggingScale && bothGrips &&
