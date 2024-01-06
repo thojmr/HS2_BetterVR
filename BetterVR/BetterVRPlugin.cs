@@ -84,7 +84,9 @@ namespace BetterVR
 
         private static void CheckRadialMenu(RadialMenu radialMenu, HandRole handRole)
         {
-            bool menuShouldBeActive = ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.AKey);
+            bool menuShouldBeActive =
+                ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.AKey) ||
+                (radialMenu.isActiveAndEnabled && ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.AKey));
             if (menuShouldBeActive && !radialMenu.gameObject.activeSelf)
             {
                 radialMenu.gameObject.SetActive(true);
@@ -132,6 +134,7 @@ namespace BetterVR
                     break;
                 case 5:
                     if (!isTriggerUp) break;
+                    radialMenu.gameObject.SetActive(false);
                     BetterVRPluginHelper.ResetView();
                     BetterVRPluginHelper.UpdateControllersVisibilty();
                     VRControllerCollider.UpdateDynamicBoneColliders();
