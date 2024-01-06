@@ -1,7 +1,7 @@
 ::Zips the dll into the correct directory structure for release
 ::Make sure to increment the version
 
-set version=0.46
+set version=0.47
 set name=HS2_BetterVR
 
 IF NOT EXIST  "../release/%name%/BepInEx/plugins" MKDIR  "../release/%name%/BepInEx/plugins"
