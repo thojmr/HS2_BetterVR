@@ -42,7 +42,9 @@ namespace BetterVR
         {
             if (!leftHandIndicator || !rightHandIndicator || !headIndicator) return;
 
-            if (IsGaugeHit() && (isHSpeedGestureEffective || smoothGaugeHit > 0))
+            bool isGaugeHit = IsGaugeHit();
+
+            if (isGaugeHit && (isHSpeedGestureEffective || smoothGaugeHit > 0))
             {
                 leftHandIndicator.gameObject.SetActive(true);
                 rightHandIndicator.gameObject.SetActive(true);
@@ -52,7 +54,7 @@ namespace BetterVR
             else if (!leftHandIndicator.isActiveAndEnabled && !rightHandIndicator.isActiveAndEnabled && !headIndicator.isActiveAndEnabled)
             {
                 return;
-            } 
+            }
             else
             {
                 smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, -0.125f, ref acceleration, 0.25f);
@@ -67,7 +69,7 @@ namespace BetterVR
                 }
             }
 
-            UpdateIndicatorSizeAndColor();
+            UpdateIndicatorSizeAndColor(isGaugeHit);
 
             var camera = BetterVRPluginHelper.VRCamera;
             var vrOrigin = BetterVRPluginHelper.VROrigin;
@@ -103,26 +105,21 @@ namespace BetterVR
             return Singleton<HSceneFlagCtrl>.Instance?.feel_f ?? 0;
         }
 
-        private void UpdateIndicatorSizeAndColor()
+        private void UpdateIndicatorSizeAndColor(bool isGaugeHit)
         {
             var feelLevel = GetFeelLevel();
-            Color color;
-            if (feelLevel > 0.98 || (feelLevel > 0.74f && feelLevel < 0.75f))
-            {
-                // Pulsing color
-                color = Color.Lerp(FINISH_COLOR, Color.white, Mathf.Abs((Time.time / 0.25f) % 2 - 1));
-            }
-            else
-            {
-                color = Color.Lerp(START_COLOR, FINISH_COLOR, feelLevel);
-            }
+            Color color =
+                ShouldUsePulsingColor(isGaugeHit, feelLevel) ?
+                Color.Lerp(FINISH_COLOR, Color.white, Mathf.Abs((Time.time * 4) % 2 - 1)) :
+                Color.Lerp(START_COLOR, FINISH_COLOR, feelLevel);
 
             if (headIndicator)
             {
                 headIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 32;
                 headIndicator.color = color;
             }
-            if (leftHandIndicator) {
+            if (leftHandIndicator)
+            {
                 leftHandIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 64;
                 leftHandIndicator.color = color;
             }
@@ -131,6 +128,13 @@ namespace BetterVR
                 rightHandIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 64;
                 rightHandIndicator.color = color;
             }
+        }
+
+        private static bool ShouldUsePulsingColor(bool isGaugeHit, float feelLevel)
+        {
+            if (!isGaugeHit) return false;
+            if (feelLevel > 0.735f && feelLevel < 0.75f) return true;
+            return feelLevel > 0.975f;
         }
 
         private static TextMeshPro CreateIndicator(Transform cursorAttach)
