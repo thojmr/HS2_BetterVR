@@ -45,22 +45,22 @@ namespace BetterVR
 
             if (ViveInput.GetPressDownEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip))
             {
-                var controllerModel = BetterVRPluginHelper.FindLeftControllerRenderModel(out var center);
-                if (controllerModel != null & GrabDistance(center) < controllerModel.transform.lossyScale.x * GRAB_RANGE)
+                var controllerCenter = BetterVRPluginHelper.leftControllerCenter;
+                if (controllerCenter != null &&
+                    GrabDistance(controllerCenter.position) < controllerCenter.transform.lossyScale.x * GRAB_RANGE)
                 {
                     hSpeedGesture.roleProperty = VRControllerInput.roleL;
-                    AttachAndBringToRangeOf(controllerModel);
+                    AttachAndBringToRangeOf(controllerCenter);
                 }
             }
             else if (ViveInput.GetPressDownEx<HandRole>(HandRole.RightHand, ControllerButton.Grip))
             {
-                var controllerModel = BetterVRPluginHelper.FindRightControllerRenderModel(out var center);
-                if (controllerModel != null & GrabDistance(center) < controllerModel.transform.lossyScale.x * GRAB_RANGE)
+                var controllerCenter = BetterVRPluginHelper.rightControllerCenter;
+                if (controllerCenter != null && GrabDistance(controllerCenter.position) < controllerCenter.transform.lossyScale.x * GRAB_RANGE)
                 {
                     hSpeedGesture.roleProperty = VRControllerInput.roleR;
-                    AttachAndBringToRangeOf(controllerModel);
+                    AttachAndBringToRangeOf(controllerCenter);
                 }
-               
             }
             else if (
                 !IsAttachedToBody() &&
@@ -91,11 +91,11 @@ namespace BetterVR
                 // Bring the newly appeared object into range of hand.
                 if (isRightHand)
                 {
-                    AttachAndBringToRangeOf(BetterVRPluginHelper.FindRightControllerRenderModel(out var center));
+                    AttachAndBringToRangeOf(BetterVRPluginHelper.leftControllerCenter);
                 }
                 else
                 {
-                    AttachAndBringToRangeOf(BetterVRPluginHelper.FindLeftControllerRenderModel(out var center));
+                    AttachAndBringToRangeOf(BetterVRPluginHelper.rightControllerCenter);
                 }
                 transform.SetParent(null, worldPositionStays: true);
             }
