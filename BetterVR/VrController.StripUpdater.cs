@@ -183,7 +183,7 @@ namespace BetterVR
                 stripIndicator.transform.parent =
                     isLeftHand ?  BetterVRPluginHelper.leftCursorAttach :  BetterVRPluginHelper.rightCursorAttach;
                 stripIndicator.transform.localScale = Vector3.one / 256f;
-                stripIndicator.transform.localPosition = Vector3.back * 0.08f;
+                stripIndicator.transform.localPosition = Vector3.back * 0.0625f;
                 stripIndicator.transform.localRotation = Quaternion.identity;
                 stripIndicator.receiveShadows = false;
                 stripIndicator.shadowCastingMode = ShadowCastingMode.Off;
