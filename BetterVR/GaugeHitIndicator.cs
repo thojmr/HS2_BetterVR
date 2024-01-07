@@ -69,29 +69,36 @@ namespace BetterVR
                 }
             }
 
-            UpdateIndicatorSizeAndColor(isGaugeHit);
-
             var camera = BetterVRPluginHelper.VRCamera;
             var vrOrigin = BetterVRPluginHelper.VROrigin;
 
-            if (camera && vrOrigin)
-            {
-                leftHandIndicator.transform.localPosition =
-                    leftHandIndicator.transform.parent.InverseTransformDirection(vrOrigin.transform.up) * 0.0625f;
-                rightHandIndicator.transform.localPosition =
-                    rightHandIndicator.transform.parent.InverseTransformDirection(vrOrigin.transform.up) * 0.0625f;
-                headIndicator.transform.position =
-                    Vector3.SmoothDamp(
-                        headIndicator.transform.position,
-                        camera.transform.TransformPoint(0, 0.25f, 0.75f),
-                        ref headIndicatorVelocity,
-                        1f);
+            if (camera == null || vrOrigin == null) return;
 
+            headIndicator.transform.position = Vector3.SmoothDamp(
+                headIndicator.transform.position,
+                camera.transform.TransformPoint(0, 0.25f, 0.75f),
+                ref headIndicatorVelocity,
+                1f);
+            headIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
+
+            var leftParent = BetterVRPluginHelper.leftControllerCenter;
+            var rightParent = BetterVRPluginHelper.rightControllerCenter;
+            var offset = vrOrigin.transform.TransformVector(Vector3.up * 0.0625f);
+
+            if (leftParent != null) {
+                if (leftHandIndicator.transform.parent != leftParent) leftHandIndicator.transform.parent = leftParent;
+                leftHandIndicator.transform.position = leftParent.position + offset;
                 leftHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-                rightHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-                headIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-
             }
+
+            if (rightParent != null)
+            {
+                if (rightHandIndicator.transform.parent != rightParent) rightHandIndicator.transform.parent = rightParent;
+                rightHandIndicator.transform.position = rightParent.position + offset;
+                rightHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
+            }
+
+            UpdateIndicatorSizeAndColor(isGaugeHit);
         }
 
         private bool IsGaugeHit()
@@ -100,22 +107,17 @@ namespace BetterVR
             return ctrl != null && ctrl.isGaugeHit && ctrl.loopType != -1;
         }
 
-        private float GetFeelLevel()
-        {
-            return Singleton<HSceneFlagCtrl>.Instance?.feel_f ?? 0;
-        }
-
         private void UpdateIndicatorSizeAndColor(bool isGaugeHit)
         {
-            var feelLevel = GetFeelLevel();
+            var feelLevel = Singleton<HSceneFlagCtrl>.Instance?.feel_f ?? 0;
             Color color =
                 ShouldUsePulsingColor(isGaugeHit, feelLevel) ?
                 Color.Lerp(FINISH_COLOR, Color.white, Mathf.Abs((Time.time * 4) % 2 - 1)) :
-                Color.Lerp(START_COLOR, FINISH_COLOR, feelLevel);
+                Color.Lerp(START_COLOR, FINISH_COLOR, feelLevel * feelLevel);
 
             if (headIndicator)
             {
-                headIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 32;
+                headIndicator.transform.localScale = Vector3.one * smoothGaugeHit * 0.02f;
                 headIndicator.color = color;
             }
             if (leftHandIndicator)
@@ -134,7 +136,7 @@ namespace BetterVR
         {
             if (!isGaugeHit) return false;
             if (feelLevel > 0.735f && feelLevel < 0.75f) return true;
-            return feelLevel > 0.985f;
+            return feelLevel > 0.97f;
         }
 
         private static TextMeshPro CreateIndicator(Transform cursorAttach)
@@ -147,10 +149,6 @@ namespace BetterVR
             textMesh.fontSize = 16;
             textMesh.color = new Color(1, 0.25f, 0.25f);
             textMesh.alignment = TextAlignmentOptions.Center;
-            // var material = textMesh.fontMaterial;
-            // material.renderQueue = (int) UnityEngine.Rendering.RenderQueue.Overlay;
-            // textMesh.fontMaterial = material;
-            // textMesh.sort
             return textMesh;
         }
     }
