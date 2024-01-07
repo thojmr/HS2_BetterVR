@@ -1,4 +1,5 @@
 using HTC.UnityPlugin.Vive;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace BetterVR
         private static readonly Regex SPNKABLE_COLLIDER_NAME_MATCHER = new Regex(@"[Ll]eg|[Ss]iri");
         private static readonly Regex MOUTH_MATCHER = new Regex(@"[Mm]outh");
 
+        internal float speed { get; private set; }
         internal ViveRoleProperty roleProperty;
         internal Transform capsuleStart;
         internal Transform capsuleEnd;
@@ -18,10 +20,10 @@ namespace BetterVR
         internal float sensitivityMultiplier = 1;
         internal InteractionCollider interactingCollider { get; private set; }
 
+        // TODO: remove
         internal static Vector2 hitArea;
 
-        private bool isTouching;
-        private bool isColliderSensitive { get { return interactingCollider != null && interactingCollider.sensitivityLevel >= 2; } }
+        internal bool isTouching { get; private set; }
         private static HSpeedGestureReceiver receiver;
         private static FadingHaptic _leftHandHHaptic;
         private static FadingHaptic _rightHandHHaptic;
@@ -57,6 +59,12 @@ namespace BetterVR
         void Awake()
         {
             if (receiver == null) receiver = new GameObject("HSpeedGestureReceiver").AddComponent<HSpeedGestureReceiver>();
+            receiver.AddGesture(this);
+        }
+
+        void OnDestroy()
+        {
+            receiver.RemoveGesture(this);
         }
 
         void FixedUpdate()
@@ -65,13 +73,11 @@ namespace BetterVR
             var hCtrl = Singleton<HSceneFlagCtrl>.Instance;
             if (!hCtrl) return;
 
-            float speed =
+            speed =
                 VivePose.GetVelocity(roleProperty).magnitude * BetterVRPlugin.HandHSpeedSensitivity.Value * sensitivityMultiplier
                 + VivePose.GetAngularVelocity(roleProperty).magnitude * 0.0625f;
             isTouching = ShouldBeTouching(speed);
             if (!isTouching) return;
-
-            UpdateSmoothTargetSpeed(speed, hCtrl);
 
             var hScene = Singleton<Manager.HSceneManager>.Instance?.Hscene;
             var anim = hScene?.GetProcBase();
@@ -81,39 +87,11 @@ namespace BetterVR
                 receiver.Spnk(hScene, hCtrl))
             {
                 BetterVRPlugin.Logger.LogDebug("Spnk speed: " + speed);
-                if (BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
-                {
-                    if (roleProperty == VRControllerInput.roleL) {
-                        leftHandFadingHaptic.duration = 0.375f;
-                        leftHandFadingHaptic.enabled = true;
-                    }
-                    else if (roleProperty == VRControllerInput.roleR)
-                    {
-                        rightHandFadingHaptic.duration = 0.375f;
-                        rightHandFadingHaptic.enabled = true;
-                    }
-                }
-            } 
-            else if (isTouching && speed > 0 && BetterVRPlugin.HapticFeedbackIntensity.Value > 0)
+                TriggerSpnkHaptic();
+            }
+            else if (isTouching && speed > 0)
             {
-                var amplitude = speed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value;
-                var frequency = hCtrl.isGaugeHit ? 120 : 35;
-                if (roleProperty == VRControllerInput.roleH)
-                {
-                    if (!(BetterVRPluginHelper.GetLeftHand()?.GetComponentInChildren<HSpeedGesture>()?.isTouching ?? false))
-                    {
-                        ViveInput.TriggerHapticVibration(VRControllerInput.roleL, frequency: frequency, amplitude: amplitude / 4);
-                    }
-                    if (!(BetterVRPluginHelper.GetRightHand()?.GetComponentInChildren<HSpeedGesture>()?.isTouching ?? false))
-                    {
-                        ViveInput.TriggerHapticVibration(VRControllerInput.roleR, frequency: frequency, amplitude: amplitude / 4);
-                    }
-
-                }
-                else
-                {
-                    ViveInput.TriggerHapticVibration(roleProperty, frequency: frequency, amplitude: amplitude);
-                }
+                TriggerTouchingHaptic(hCtrl.isGaugeHit);
             }
         }
 
@@ -179,44 +157,45 @@ namespace BetterVR
             return interactingCollider != null;
         }
 
-        private void UpdateSmoothTargetSpeed(float speedInput, HSceneFlagCtrl hCtrl)
+        private void TriggerSpnkHaptic()
         {
-            if (!isTouching) return;
-
-            if (!isColliderSensitive && !HSpeedGestureReceiver.IsHoushi()) {
-                if (hCtrl.loopType > 0)
-                {
-                    if (hCtrl.isGaugeHit && speedInput > 0 && speedInput < 1.75f && hitArea != null)
-                    {
-                        // Reward mild collider touching is fast loops by stabilizing gauge hit.
-                        if (Random.Range(0f, 1f) < Time.fixedDeltaTime * 4) receiver.smoothTargetSpeed = Mathf.Lerp(hitArea.x, hitArea.y, 0.5f);
-                    }
-                    return;
-                }
-                else if (receiver.smoothTargetSpeed > HSpeedGestureReceiver.LOOP_01_DIVIDER - hCtrl.wheelActionCount)
-                {
-                    // Do not let touching less sensitive parts affect speed during fast movement.
-                    return;
-                }
-            }
-
-            var targetSpeed = Mathf.Clamp(speedInput - 0.125f, 0, 2f);
-            
-            if (hCtrl.loopType == 2)
+            if (BetterVRPlugin.HapticFeedbackIntensity.Value == 0) return;
+            if (roleProperty == VRControllerInput.roleL)
             {
-                // Curve speed output to require faster movement.
-                targetSpeed *= (targetSpeed / 2);
+                leftHandFadingHaptic.duration = 0.375f;
+                leftHandFadingHaptic.enabled = true;
             }
-            else if (interactingCollider.sensitivityLevel >= 3) {
-                // Curve speed output to require slower movement.
-                targetSpeed = Mathf.Sqrt(targetSpeed * 2);
+            else if (roleProperty == VRControllerInput.roleR)
+            {
+                rightHandFadingHaptic.duration = 0.375f;
+                rightHandFadingHaptic.enabled = true;
+            } 
+        }
+
+        private void TriggerTouchingHaptic(bool isGaugeHit)
+        {
+            if (BetterVRPlugin.HapticFeedbackIntensity.Value == 0) return;
+
+            var amplitude = speed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value;
+            var frequency = isGaugeHit ? 120 : 35;
+            if (roleProperty != VRControllerInput.roleH)
+            {
+                ViveInput.TriggerHapticVibration(roleProperty, frequency: frequency, amplitude: amplitude);
+                return;
             }
 
-            if (targetSpeed <= receiver.smoothTargetSpeed) return;
+            // HMD has no haptic, trigger haptic on the hands unless the hands are already touching.
+            var leftGesture = BetterVRPluginHelper.GetLeftHand()?.GetComponentInChildren<HSpeedGesture>();
+            if (leftGesture == null || !leftGesture.isTouching)
+            {
+                ViveInput.TriggerHapticVibration(VRControllerInput.roleL, frequency: frequency, amplitude: amplitude / 4);
+            }
 
-            receiver.smoothTargetSpeed = Mathf.Clamp(
-                targetSpeed * Time.fixedDeltaTime * receiver.GetAccelerationFactor(hCtrl) + receiver.smoothTargetSpeed,
-                0, targetSpeed);
+            var rightGesture = BetterVRPluginHelper.GetRightHand()?.GetComponentInChildren<HSpeedGesture>();
+            if (rightGesture == null || !rightGesture.isTouching)
+            {
+                ViveInput.TriggerHapticVibration(VRControllerInput.roleR, frequency: frequency, amplitude: amplitude / 4);
+            }
         }
     }
 
@@ -233,10 +212,12 @@ namespace BetterVR
         internal const float CUSTOM_SPEED_GAUGE_RATE = 1f / 256;
 
         internal static float outputY { get; private set; }
+
         private static FieldInfo modeCtrlField;
 
         internal float smoothTargetSpeed = 0;
         private GaugeHitIndicator gaugeHitIndicator;
+        private HashSet<HSpeedGesture> gestures = new HashSet<HSpeedGesture>();
 
         void Awake()
         {
@@ -245,14 +226,17 @@ namespace BetterVR
 
         void FixedUpdate()
         {
-            bool isEffective = (smoothTargetSpeed > MIN_EFFECTIVE_SPEED);
-            (gaugeHitIndicator ?? (gaugeHitIndicator = new GaugeHitIndicator())).UpdateIndicators(isEffective);
-
             var hCtrl = Singleton<HSceneFlagCtrl>.Instance;
             if (!hCtrl) return;
 
+            UpdateSmoothTargetSpeed(hCtrl, Time.fixedDeltaTime);
+
+            bool isEffective = (smoothTargetSpeed > MIN_EFFECTIVE_SPEED);
+            if (gaugeHitIndicator == null) gaugeHitIndicator = new GaugeHitIndicator();
+            gaugeHitIndicator.UpdateIndicators(isEffective);
+
             // Reduce feel increase rate for realism.
-            hCtrl.speedGuageRate = isEffective ? CUSTOM_SPEED_GAUGE_RATE : ORIGINAL_SPEED_GAUGE_RATE;
+            hCtrl.speedGuageRate = isEffective && hCtrl.feel_f < 0.75f ? CUSTOM_SPEED_GAUGE_RATE : ORIGINAL_SPEED_GAUGE_RATE;
 
             if (!isEffective)
             {
@@ -260,8 +244,7 @@ namespace BetterVR
                 return;
             }
 
-            outputY = GetOutput(hCtrl);
-            smoothTargetSpeed = Mathf.Lerp(smoothTargetSpeed, IDLE_SPEED, Time.fixedDeltaTime * GetAccelerationFactor(hCtrl));
+            UpdateOutput(hCtrl);
 
             if (IsAibu() && smoothTargetSpeed < LOOP_0_DEACTIVATION_THRESHOLD && hCtrl.loopType >= 0 && hCtrl.loopType <= 2)
             {
@@ -270,47 +253,6 @@ namespace BetterVR
             }
 
             if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.998f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
-
-            // BetterVRPlugin.Logger.LogWarning(
-            //    "H Loop type: " +  hCtrl.loopType + " current speed: " + hCtrl.speed +
-            //    " smooth target speed: " + smoothTargetSpeed);
-        }
-
-        internal float GetOutput(HSceneFlagCtrl hCtrl)
-        {
-            if (hCtrl.loopType == -1)
-            {
-                // Allow starting action using hand movement in Aibu mode.
-                if (IsAibu() && smoothTargetSpeed > LOOP_0_ACTIVATION_THRESHOLD) return 1;
-                return 0;
-            }
-
-            float bufferRadius = hCtrl.wheelActionCount;
-            var clampedSpeed = smoothTargetSpeed;
-            if (hCtrl.speed < LOOP_01_DIVIDER)
-            {
-                if (clampedSpeed < LOOP_1_ACTIVATION_THRESHOLD) clampedSpeed = Mathf.Min(clampedSpeed, LOOP_01_DIVIDER - bufferRadius);
-            }
-            else
-            {
-                if (clampedSpeed > LOOP_1_DEACTIVATION_THRESHOLD) clampedSpeed = Mathf.Max(clampedSpeed, LOOP_01_DIVIDER + bufferRadius);
-            }
-
-            if (clampedSpeed >= hCtrl.speed + bufferRadius) return 1;
-            if (clampedSpeed <= hCtrl.speed - bufferRadius) return -1;
-
-            return 0;
-        }
-
-        internal float GetAccelerationFactor(HSceneFlagCtrl ctrl)
-        {
-            // Damp the speed more when it is in gauge hit zone to avoid voice flickering.
-            if (ctrl.isGaugeHit) return smoothTargetSpeed <= 1 ? 0.125f : 0.125f / smoothTargetSpeed;
-
-            // Damp the speed to delay starting Aibu.
-            if (ctrl.loopType == -1) return 0.375f;
-
-            return smoothTargetSpeed <= 1 ? 1f : 1 / smoothTargetSpeed;
         }
 
         internal static bool IsAibu()
@@ -325,11 +267,111 @@ namespace BetterVR
             return anim != null && anim is Houshi;
         }
 
+        private void UpdateOutput(HSceneFlagCtrl hCtrl)
+        {
+            if (hCtrl.loopType == -1)
+            {
+                if (IsAibu() && smoothTargetSpeed > LOOP_0_ACTIVATION_THRESHOLD)
+                {
+                    // Allow starting action using hand movement in Aibu mode.
+                    outputY = 1;
+                }
+                else
+                {
+                    outputY = 0;
+                }
+                return;
+            }
+
+            float bufferRadius = hCtrl.wheelActionCount;
+            var clampedSpeed = Mathf.Clamp(smoothTargetSpeed, 0, 2);
+            if (hCtrl.speed < LOOP_01_DIVIDER)
+            {
+                if (clampedSpeed < LOOP_1_ACTIVATION_THRESHOLD) clampedSpeed = Mathf.Min(clampedSpeed, LOOP_01_DIVIDER - bufferRadius);
+            }
+            else
+            {
+                if (clampedSpeed > LOOP_1_DEACTIVATION_THRESHOLD) clampedSpeed = Mathf.Max(clampedSpeed, LOOP_01_DIVIDER + bufferRadius);
+            }
+
+            outputY = 0;
+            // if (clampedSpeed >= hCtrl.speed + bufferRadius) outputY = 1;
+            //if (clampedSpeed <= hCtrl.speed - bufferRadius) outputY = -1;
+
+            hCtrl.speed = clampedSpeed;
+        }
+
         internal bool Spnk(HScene hScene, HSceneFlagCtrl ctrl)
         {
             var anim = hScene.GetProcBase();
             if (anim == null || !(anim is Spnking)) return false;
             return anim.Proc(GetModeCtrl(hScene), ctrl.nowAnimationInfo, 1);
+        }
+
+        internal void AddGesture(HSpeedGesture gesture)
+        {
+            gestures.Add(gesture);
+        }
+
+        internal void RemoveGesture(HSpeedGesture gesture)
+        {
+            gestures.Remove(gesture);
+        }
+
+        private void UpdateSmoothTargetSpeed(HSceneFlagCtrl hCtrl, float deltaTime)
+        {
+            float targetSpeed = IDLE_SPEED;
+            bool hasMildTouching = false;
+
+            foreach (var gesture in gestures)
+            {
+                if (!gesture.isTouching) continue;
+
+                targetSpeed = Mathf.Max(targetSpeed, 0);
+
+                if (gesture.interactingCollider.sensitivityLevel == 1)
+                {
+                    if (gesture.speed > 0 && gesture.speed < 1.75f) hasMildTouching = true;
+                    if (hCtrl.loopType > 0 || smoothTargetSpeed > HSpeedGestureReceiver.LOOP_01_DIVIDER - hCtrl.wheelActionCount)
+                    {
+                        // Do not let touching less sensitive parts affect speed during fast movement.
+                        if (!IsHoushi()) continue;
+                    }
+                }
+
+                var speedInput = Mathf.Clamp(gesture.speed - 0.125f, 0, 2f);
+
+                if (hCtrl.loopType == 2)
+                {
+                    // Curve speed down to require faster movement.
+                    speedInput *= speedInput / 2;
+                }
+                else if (gesture.interactingCollider.sensitivityLevel >= 3)
+                {
+                    // Curve speed up to increase sensitivity.
+                    speedInput = Mathf.Sqrt(speedInput * 2);
+                }
+
+                targetSpeed = Mathf.Max(targetSpeed, speedInput);
+            }
+
+            float accelerationFactor = 1;
+            if (hCtrl.isGaugeHit) {
+                // Damp the speed more when it is in gauge hit zone to avoid voice flickering;
+                // Reward mild collider touching in fast loops by stabilizing gauge hit more.
+                accelerationFactor = hasMildTouching && hCtrl.loopType > 0 ? 0.125f : 0.25f;
+            }
+            else if (hCtrl.loopType == -1)
+            {
+                // Damp the speed to delay starting Aibu.
+                accelerationFactor = 0.25f;
+            }
+
+            smoothTargetSpeed = Mathf.Lerp(smoothTargetSpeed, targetSpeed, deltaTime * accelerationFactor);
+
+            // BetterVRPlugin.Logger.LogWarning(
+            //    "H Loop type: " +  hCtrl.loopType + " current speed: " + hCtrl.speed +
+            //    " smooth target speed: " + smoothTargetSpeed);
         }
 
         private static int GetModeCtrl(HScene hScene)
