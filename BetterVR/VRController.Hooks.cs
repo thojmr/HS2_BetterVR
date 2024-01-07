@@ -50,6 +50,24 @@ namespace BetterVR
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "GetAxis")]
+        public static bool HSceneGetAxisPatch(HandRole _hand, ref Vector2 __result)
+        {
+            bool shouldFallback = PatchGetAxis(_hand, ref __result);
+            if (HSpeedGestureReceiver.outputY != 0)
+            {
+                __result.y += HSpeedGestureReceiver.outputY;
+                shouldFallback = false;
+            }
+            return shouldFallback;
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSpriteFinishCategory), "GetAxis")]
+        public static bool HSceneSpriteCategoryGetAxisPatch(HandRole _hand, ref Vector2 __result)
+        {
+            return PatchGetAxis(_hand, ref __result);
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(HS2VR.GripMoveCrtl), "GetAxis")]
         public static bool PatchGetAxis(HandRole _hand, ref Vector2 __result)
         {
             if (_hand != HandRole.RightHand)
@@ -61,8 +79,6 @@ namespace BetterVR
             // This method works for Oculus controllers' thumbsticks too.
             var axis = BetterVRPluginHelper.GetRightHandPadStickCombinedOutput();
 
-            axis.y += HSpeedGestureReceiver.outputY;
-
             if (axis == Vector2.zero) return true;
 
             // The vanilla pad/thumb stick detection is half broken and does not work on some platforms, giving rise to the necessity of this patch.
@@ -71,11 +87,6 @@ namespace BetterVR
             return false;
         }
 
-        [HarmonyPrefix, HarmonyPatch(typeof(HS2VR.GripMoveCrtl), "GetAxis")]
-        public static bool GripMoveCrtlGetAxisPatch(HandRole _hand, ref Vector2 __result)
-        {
-            return PatchGetAxis(_hand, ref __result);
-        }
 
         // [HarmonyPostfix, HarmonyPatch(typeof(AIChara.ChaControl), nameof(AIChara.ChaControl.Initialize))]
         // internal static void ChaControlStartPatch(AIChara.ChaControl __instance, GameObject _objRoot)
