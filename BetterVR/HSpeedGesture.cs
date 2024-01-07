@@ -303,7 +303,7 @@ namespace BetterVR
         internal float GetAccelerationFactor(HSceneFlagCtrl ctrl)
         {
             // Damp the speed more when it is in gauge hit zone to avoid voice flickering.
-            if (ctrl.isGaugeHit && smoothTargetSpeed > 0.125f) return 0.125f / smoothTargetSpeed;
+            if (ctrl.isGaugeHit) return smoothTargetSpeed <= 1 ? 0.125f : 0.125f / smoothTargetSpeed;
 
             // Damp the speed to delay starting Aibu.
             if (ctrl.loopType == -1) return 0.375f;
