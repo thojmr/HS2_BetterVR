@@ -169,7 +169,7 @@ namespace BetterVR
             // Make body attach face forward horizontally.
             var targetForward = Vector3.ProjectOnPlane(camera.transform.forward, bodyAttach.up);
 
-            var targetPosition = camera.transform.position;
+            var targetPosition = camera.transform.TransformPoint(Vector3.down * 0.1875f);
 
             if (!BetterVRPlugin.ToyMovesVerticallyWhenAttachedToBody.Value)
             {
