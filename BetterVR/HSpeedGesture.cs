@@ -7,9 +7,6 @@ namespace BetterVR
 {
     public class HSpeedGesture : MonoBehaviour
     {
-        private static readonly Regex ULTRA_SENSITIVE_COLLIDER_NAME_MATCHER = new Regex(@"agina|okan");
-        private static readonly Regex SENSITIVE_COLLIDER_NAME_MATCHER = new Regex(@"[Mm]une|[Cc]hest|agina|okan");
-        private static readonly Regex MILD_COLLIDER_NAME_MATCHER = new Regex(@"[Nn]eck|[Ll]eg|[Ss]iri|[Bb]elly|[Mm]outh");
         private static readonly Regex SPNKABLE_COLLIDER_NAME_MATCHER = new Regex(@"[Ll]eg|[Ss]iri");
         private static readonly Regex MOUTH_MATCHER = new Regex(@"[Mm]outh");
 
@@ -19,12 +16,12 @@ namespace BetterVR
         internal float activationRadius = 0.25f;
         internal float deactivationDistance = 0.5f;
         internal float sensitivityMultiplier = 1;
-        internal Collider interactingCollider { get; private set; }
+        internal InteractionCollider interactingCollider { get; private set; }
 
         internal static Vector2 hitArea;
 
         private bool isTouching;
-        private bool isColliderSensitive;
+        private bool isColliderSensitive { get { return interactingCollider != null && interactingCollider.sensitivityLevel >= 2; } }
         private static HSpeedGestureReceiver receiver;
         private static FadingHaptic _leftHandHHaptic;
         private static FadingHaptic _rightHandHHaptic;
@@ -69,7 +66,8 @@ namespace BetterVR
             if (!hCtrl) return;
 
             float speed =
-                VivePose.GetVelocity(roleProperty).magnitude * BetterVRPlugin.HandHSpeedSensitivity.Value * sensitivityMultiplier;
+                VivePose.GetVelocity(roleProperty).magnitude * BetterVRPlugin.HandHSpeedSensitivity.Value * sensitivityMultiplier
+                + VivePose.GetAngularVelocity(roleProperty).magnitude * 0.0625f;
             isTouching = ShouldBeTouching(speed);
             if (!isTouching) return;
 
@@ -137,7 +135,8 @@ namespace BetterVR
             if (interactingCollider)
             {
                 Vector3 capsuleCenter = Vector3.Lerp(capsuleStart.position, capsuleEnd.position, 0.5f);
-                if (Vector3.Distance(capsuleCenter, interactingCollider.ClosestPoint(capsuleCenter)) < deactivationDistance * scale)
+                var collider = interactingCollider.GetComponent<Collider>();
+                if (collider != null && Vector3.Distance(capsuleCenter, collider.ClosestPoint(capsuleCenter)) < deactivationDistance * scale)
                 {
                     // Staying in the range of the current collider, can stay touching
                     return true;
@@ -159,18 +158,21 @@ namespace BetterVR
                 var interactionCollider = collider.GetComponent<InteractionCollider>();
                 if (interactionCollider == null || !interactionCollider.IsCharacterVisible()) continue;
 
-                if (SENSITIVE_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
+                if (interactionCollider.sensitivityLevel >= 2)
                 {
-                    interactingCollider = collider;
-                    isColliderSensitive = true;
+                    interactingCollider = interactionCollider;
                     return true;
                 }
 
-                if (MILD_COLLIDER_NAME_MATCHER.IsMatch(collider.name))
+                if (interactionCollider.sensitivityLevel == 1)
                 {
-                    if (roleProperty != VRControllerInput.roleH && MOUTH_MATCHER.IsMatch(collider.name)) continue;
-                    interactingCollider = collider;
-                    isColliderSensitive = false;
+                    interactingCollider = interactionCollider;
+                    continue;
+                }
+                
+                if (roleProperty == VRControllerInput.roleH && MOUTH_MATCHER.IsMatch(collider.name))
+                {
+                    interactingCollider = interactionCollider;
                 }
             }
 
@@ -205,7 +207,7 @@ namespace BetterVR
                 // Curve speed output to require faster movement.
                 targetSpeed *= (targetSpeed / 2);
             }
-            else if (ULTRA_SENSITIVE_COLLIDER_NAME_MATCHER.IsMatch(interactingCollider.name)) {
+            else if (interactingCollider.sensitivityLevel >= 3) {
                 // Curve speed output to require slower movement.
                 targetSpeed = Mathf.Sqrt(targetSpeed * 2);
             }
@@ -267,7 +269,7 @@ namespace BetterVR
                 StopMotion(hCtrl);
             }
 
-            if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.99f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
+            if (hCtrl.isGaugeHit && hCtrl.feel_f > 0.998f && hCtrl.feel_m > 0.75f) BetterVRPluginHelper.TryFinishHSameTime();
 
             // BetterVRPlugin.Logger.LogWarning(
             //    "H Loop type: " +  hCtrl.loopType + " current speed: " + hCtrl.speed +
