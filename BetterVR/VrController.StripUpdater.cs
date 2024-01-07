@@ -13,6 +13,7 @@ namespace BetterVR
     {
         internal static readonly Color[] STRIP_INDICATOR_COLORS =
             new Color[] { Color.blue, Color.red, Color.cyan, Color.magenta, Color.yellow, Color.green, Color.white, Color.black };
+        
         private const float STRIP_START_RANGE = 0.5f;
         private const float STRIP_MIN_DRAG_RANGE = 0.75f;
         private Canvas clothIconCanvas;
@@ -23,6 +24,8 @@ namespace BetterVR
         private bool canClothe;
         private StripCollider grabbedStripCollider;
         private MeshRenderer stripIndicator;
+
+
 
         internal StripUpdater(ViveRoleProperty handRole)
         {
@@ -261,13 +264,14 @@ namespace BetterVR
                 { new Regex(@"Kosi01$"), new ColliderAnatomy(1, scale: Vector3.one * 1.25f) }, // Bottom
                 { new Regex(@"Siri_[LR]$"), new ColliderAnatomy(1, scale: Vector3.one * 1.25f, null, 0.75f, sensitivityLevel: 1) }, // Bottom
                 { new Regex(@"Belly_Mid_High"), new ColliderAnatomy(1, scale: new Vector3(1f, 0.75f, 0.5f), sensitivityLevel: 1) }, // Bottom
-                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(2, sensitivityLevel: 2) }, // Top inner
+                { new Regex(@"N_Chest$"), new ColliderAnatomy(2, scale: Vector3.one * 1.25f) }, // Top inner
                 { new Regex(@"Kokan$|agina_root$"), new ColliderAnatomy(3, sensitivityLevel: 3) }, // Under
                 { new Regex(@"Wrist_dam_[LR]$"), new ColliderAnatomy(4, scale: Vector3.one * 0.5f) }, // Gloves
                 { new Regex(@"LegUp01_[LR]$"), new ColliderAnatomy(5, scale: new Vector3(1.5f, 2f, 1.5f), offset: Vector3.down * 2f, sensitivityLevel: 1) }, // Pants
                 { new Regex(@"LegLow01_[LR]$"), new ColliderAnatomy(5, scale: Vector3.one * 1.25f) }, // Pants
                 { new Regex(@"LegLowRoll_[LR]$"), new ColliderAnatomy(6) }, // Socks
                 { new Regex(@"Foot01_[LR]$"), new ColliderAnatomy(7) }, // Shoes
+                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(8, sensitivityLevel: 2) }, // No cloth, for touching only
                 { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(8, scale: Vector3.one * 1.25f, sensitivityLevel: 1) }, // No cloth, for touching only
                 { new Regex(@"N_Mouth$"), new ColliderAnatomy(8, scale: Vector3.one * 0.5f) } // No cloth, for touching only
             };
@@ -290,6 +294,7 @@ namespace BetterVR
 
             AddColliderInChildren(character.transform);
             hasAddedColliders = true;
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
         }
 
         void OnDestroy()
@@ -347,33 +352,23 @@ namespace BetterVR
 
         internal static bool IsValidClothType(byte i) { return 0 <= i && i < 8; }
 
-        internal static new InteractionCollider Create(
-            ChaControl character, ColliderAnatomy anatomy,
-            Transform parent, Transform scaleReference, bool shouldRender = false)
+        internal static InteractionCollider Create(
+            ChaControl character, ColliderAnatomy anatomy, Transform parent, Transform scaleReference)
         {
+            var gameObject = new GameObject();
+            
             if (!IsValidClothType(anatomy.clothType))
             {
-                return InteractionCollider.Create(character, anatomy, parent, scaleReference, shouldRender);
+                var collider = gameObject.AddComponent<InteractionCollider>();
+                collider.Init(character, anatomy, parent, scaleReference);
+                return collider;
             }
-
-            var collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<StripCollider>();
-            collider.Init(character, anatomy.sensitivityLevel, anatomy.clothType);
-            var renderer = collider.GetComponent<MeshRenderer>();
-            if (shouldRender)
-            {
-                renderer.material.color = StripUpdater.STRIP_INDICATOR_COLORS[anatomy.clothType];
-            }
-            else
-            {
-                Destroy(renderer);
-            }
-            return collider;
-        }
-
-        internal void Init(ChaControl character, int sensitivityLevel, byte clothType)
-        {
-            base.Init(character, sensitivityLevel);
-            this.clothType = clothType;
+            
+            var stripCollider = gameObject.AddComponent<StripCollider>();
+            stripCollider.Init(character, anatomy, parent, scaleReference);
+            stripCollider.clothType = anatomy.clothType;
+            stripCollider.color = StripUpdater.STRIP_INDICATOR_COLORS[anatomy.clothType];
+            return stripCollider;
         }
 
         internal bool IsInteractable()
@@ -403,46 +398,39 @@ namespace BetterVR
 
     public class InteractionCollider : MonoBehaviour
     {
-        protected ChaControl character { get; private set; }
+        internal static bool shouldVisualizeColliders = false;
+
+        internal SphereCollider sphereCollider { get; private set; }
         internal int sensitivityLevel { get; private set; }
+        internal Color color { set { if (visualizer) visualizer.material.color = value;  } }
+      
+        protected ChaControl character { get; private set; }
+        private MeshRenderer visualizer;
 
-        internal static InteractionCollider Create(
-            ChaControl character, ColliderAnatomy anatomy,
-            Transform parent, Transform scaleReference, bool shouldRender = false)
+        void Awake()
         {
-            var collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<InteractionCollider>();
-            collider.Init(character, anatomy.sensitivityLevel);
-            return collider;
+            sphereCollider = gameObject.GetOrAddComponent<SphereCollider>();
         }
 
-        protected static GameObject CreateSphere(
-            ColliderAnatomy anatomy, Transform parent, Transform scaleReference, bool shouldRender = false)
-        {
-            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            sphere.transform.parent = scaleReference;
-            sphere.transform.localScale = anatomy.scale;
-            sphere.transform.parent = parent;
-            sphere.transform.localPosition = anatomy.offset;
-            sphere.transform.localRotation = Quaternion.identity;
-            var collider = sphere.GetOrAddComponent<SphereCollider>();
-            collider.isTrigger = true;
-            collider.radius = anatomy.radius;   
-            var renderer = sphere.GetComponent<MeshRenderer>();
-            if (shouldRender)
-            {
-                renderer.material.color = Color.gray;
-            }
-            else
-            {
-                Object.Destroy(renderer);
-            }
-            return sphere;
-        }
-
-        internal void Init(ChaControl character, int sensitivityLevel)
-        {
+        internal void Init(ChaControl character, ColliderAnatomy anatomy, Transform parent, Transform scaleReference) {
             this.character = character;
-            this.sensitivityLevel = sensitivityLevel;
+            transform.parent = scaleReference;
+            transform.localScale = anatomy.scale;
+            transform.parent = parent;
+            transform.localPosition = anatomy.offset;
+            transform.localRotation = Quaternion.identity;
+            sphereCollider.isTrigger = true;
+            sphereCollider.radius = anatomy.radius;
+            sensitivityLevel = anatomy.sensitivityLevel;
+
+            if (shouldVisualizeColliders)
+            {
+                visualizer = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetOrAddComponent<MeshRenderer>();
+                visualizer.material.color = Color.gray;
+                visualizer.transform.parent = transform;
+                visualizer.transform.localPosition = Vector3.zero;
+                visualizer.transform.localScale = Vector3.one * anatomy.radius * 2;
+            }
         }
 
         internal bool IsCharacterVisible()
