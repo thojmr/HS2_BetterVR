@@ -134,7 +134,7 @@ namespace BetterVR
         {
             if (!isGaugeHit) return false;
             if (feelLevel > 0.735f && feelLevel < 0.75f) return true;
-            return feelLevel > 0.975f;
+            return feelLevel > 0.985f;
         }
 
         private static TextMeshPro CreateIndicator(Transform cursorAttach)
