@@ -208,7 +208,9 @@ namespace BetterVR
                 }
                 clothIcons[i].SetActive(i == grabbedStripCollider.clothType);
             }
-            // if (BetterVRPluginHelper.VRCamera) clothIconCanvas.transform.LookAt(BetterVRPluginHelper.VRCamera.transform);
+            // if (BetterVRPluginHelper.VRCamera && BetterVRPluginHelper.VRCamera) {
+            //    clothIconCanvas.transform.LookAt(BetterVRPluginHelper.VRCamera.transform, BetterVRPluginHelper.VROrigin.transform.up);
+            // }
         }
 
         private static StripCollider FindClosestStripCollider(Vector3 position, float range, byte minStripLevel = 0, byte maxStripLevel = 2)
@@ -234,18 +236,20 @@ namespace BetterVR
 
     public struct ColliderAnatomy
     {
-        public ColliderAnatomy(byte clothType, Vector3? scale = null, Vector3? offset = null, float? radius = null)
+        public ColliderAnatomy(byte clothType, Vector3? scale = null, Vector3? offset = null, float? radius = null, int sensitivityLevel = 0)
         {
             this.clothType = clothType;
             this.scale = scale ?? Vector3.one;
             this.offset = offset ?? Vector3.zero;
             this.radius = radius ?? 0.5f;
+            this.sensitivityLevel = sensitivityLevel;
         }
 
         internal byte clothType;
         internal Vector3 scale;
         internal Vector3 offset;
         internal float radius;
+        internal int sensitivityLevel;
     }
 
     public class StripColliderRegistry : MonoBehaviour
@@ -254,18 +258,18 @@ namespace BetterVR
         private static readonly Dictionary<Regex, ColliderAnatomy> NAME_MATCHER_TO_ANATOMY = new Dictionary<Regex, ColliderAnatomy>
             {
                 { new Regex(@"Spine02$"), new ColliderAnatomy(0, scale: Vector3.one * 1.5f) }, // Top
-                { new Regex(@"Kosi01$"), new ColliderAnatomy(1, Vector3.one * 1.25f) }, // Bottom
-                { new Regex(@"Siri_[LR]$"), new ColliderAnatomy(1, Vector3.one * 1.25f, null, 0.75f) }, // Bottom
-                { new Regex(@"Belly_Mid_High"), new ColliderAnatomy(1, new Vector3(1f, 0.75f, 0.5f)) }, // Bottom
-                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(2) }, // Top inner
-                { new Regex(@"Kokan$|agina_root$"), new ColliderAnatomy(3) }, // Under
+                { new Regex(@"Kosi01$"), new ColliderAnatomy(1, scale: Vector3.one * 1.25f) }, // Bottom
+                { new Regex(@"Siri_[LR]$"), new ColliderAnatomy(1, scale: Vector3.one * 1.25f, null, 0.75f, sensitivityLevel: 1) }, // Bottom
+                { new Regex(@"Belly_Mid_High"), new ColliderAnatomy(1, scale: new Vector3(1f, 0.75f, 0.5f), sensitivityLevel: 1) }, // Bottom
+                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(2, sensitivityLevel: 2) }, // Top inner
+                { new Regex(@"Kokan$|agina_root$"), new ColliderAnatomy(3, sensitivityLevel: 3) }, // Under
                 { new Regex(@"Wrist_dam_[LR]$"), new ColliderAnatomy(4, scale: Vector3.one * 0.5f) }, // Gloves
-                { new Regex(@"LegUp01_[LR]$"), new ColliderAnatomy(5, scale: new Vector3(1.5f, 2f, 1.5f), offset: Vector3.down * 2f) }, // Pants
+                { new Regex(@"LegUp01_[LR]$"), new ColliderAnatomy(5, scale: new Vector3(1.5f, 2f, 1.5f), offset: Vector3.down * 2f, sensitivityLevel: 1) }, // Pants
                 { new Regex(@"LegLow01_[LR]$"), new ColliderAnatomy(5, scale: Vector3.one * 1.25f) }, // Pants
                 { new Regex(@"LegLowRoll_[LR]$"), new ColliderAnatomy(6) }, // Socks
                 { new Regex(@"Foot01_[LR]$"), new ColliderAnatomy(7) }, // Shoes
-                { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(8, Vector3.one * 1.25f) }, // No cloth, for touching only
-                { new Regex(@"N_Mouth$"), new ColliderAnatomy(8, Vector3.one * 0.5f) } // No cloth, for touching only
+                { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(8, scale: Vector3.one * 1.25f, sensitivityLevel: 1) }, // No cloth, for touching only
+                { new Regex(@"N_Mouth$"), new ColliderAnatomy(8, scale: Vector3.one * 0.5f) } // No cloth, for touching only
             };
 
         private bool hasAddedColliders = false;
@@ -353,7 +357,7 @@ namespace BetterVR
             }
 
             var collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<StripCollider>();
-            collider.Init(character, anatomy.clothType);
+            collider.Init(character, anatomy.sensitivityLevel, anatomy.clothType);
             var renderer = collider.GetComponent<MeshRenderer>();
             if (shouldRender)
             {
@@ -366,9 +370,9 @@ namespace BetterVR
             return collider;
         }
 
-        internal void Init(ChaControl character, byte clothType)
+        internal void Init(ChaControl character, int sensitivityLevel, byte clothType)
         {
-            base.Init(character);
+            base.Init(character, sensitivityLevel);
             this.clothType = clothType;
         }
 
@@ -399,14 +403,15 @@ namespace BetterVR
 
     public class InteractionCollider : MonoBehaviour
     {
-        protected ChaControl character;
+        protected ChaControl character { get; private set; }
+        internal int sensitivityLevel { get; private set; }
 
         internal static InteractionCollider Create(
             ChaControl character, ColliderAnatomy anatomy,
             Transform parent, Transform scaleReference, bool shouldRender = false)
         {
             var collider = CreateSphere(anatomy, parent, scaleReference, shouldRender).GetOrAddComponent<InteractionCollider>();
-            collider.Init(character);
+            collider.Init(character, anatomy.sensitivityLevel);
             return collider;
         }
 
@@ -434,9 +439,10 @@ namespace BetterVR
             return sphere;
         }
 
-        internal void Init(ChaControl character)
+        internal void Init(ChaControl character, int sensitivityLevel)
         {
             this.character = character;
+            this.sensitivityLevel = sensitivityLevel;
         }
 
         internal bool IsCharacterVisible()
