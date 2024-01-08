@@ -109,7 +109,6 @@ namespace BetterVR
         internal static void ChaControlLoadCharaFbxDataAsyncPostfix(AIChara.ChaControl __instance)
         {
             BetterVRPluginHelper.UpdateControllersVisibilty();
-            BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
             VRControllerCollider.UpdateDynamicBoneColliders();
         }
 
