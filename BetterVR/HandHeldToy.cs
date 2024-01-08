@@ -86,7 +86,7 @@ namespace BetterVR
         {
             mode = (mode + 1) % 3;
 
-            if (mode == 1)
+            if (mode > 0)
             {
                 // Bring the newly appeared object into range of hand.
                 if (isRightHand)
