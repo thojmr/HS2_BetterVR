@@ -34,8 +34,6 @@ namespace BetterVR
 
         internal void CheckStrip(bool enable)
         {
-            LoadClothIcons();
-
             if (BetterVRPluginHelper.VROrigin == null) return;
 
             Vector3 handPos =
@@ -103,7 +101,7 @@ namespace BetterVR
             canClothe = (grabbedStripCollider == null);
         }
 
-        private void LoadClothIcons()
+        private void LoadClothIconsIfNeeded()
         {
             if (finishedLoadingClothIcons || stripIndicator == null)
             {
@@ -116,27 +114,18 @@ namespace BetterVR
                 return;
             }
 
-            while (clothIcons.Count < 8)
-            {
-                clothIcons.Add(null);
-            }
+            while (clothIcons.Count < 8) clothIcons.Add(null);
 
-            if (!clothIconCanvas)
-            {
-                clothIconCanvas = new GameObject("ClothIconCanvas").AddComponent<Canvas>();
-                clothIconCanvas.transform.SetParent(stripIndicator.transform, false);
-                clothIconCanvas.transform.localPosition = Vector3.zero;
-                clothIconCanvas.transform.localRotation = Quaternion.Euler(120, 0, 0);
-                clothIconCanvas.transform.localScale = Vector3.one * 6;
-            }
+            if (!clothIconCanvas) clothIconCanvas = new GameObject("ClothIconCanvas").AddComponent<Canvas>();
+            clothIconCanvas.transform.SetParent(stripIndicator.transform, false);
+            clothIconCanvas.transform.localPosition = Vector3.zero;
+            clothIconCanvas.transform.localRotation = Quaternion.Euler(120, 0, 0);
+            clothIconCanvas.transform.localScale = Vector3.one * 6;
 
             bool waitingForIcons = false;
             for (int i = 0; i < 8; i++)
             {
-                if (clothIcons[i] != null)
-                {
-                    continue;
-                }
+                if (clothIcons[i] != null) continue;
 
                 var allClothButtons = hSceneSprite.objCloth.objs;
                 if (allClothButtons == null || allClothButtons.Count <= i)
@@ -169,6 +158,7 @@ namespace BetterVR
             }
 
             finishedLoadingClothIcons = !waitingForIcons;
+            if (finishedLoadingClothIcons) BetterVRPlugin.Logger.LogInfo("Loaded cloth icons");
         }
 
         private void UpdateStripIndicator()
@@ -176,12 +166,12 @@ namespace BetterVR
             Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
             if (vrOrigin == null) return;
 
-            if (stripIndicator == null || stripIndicator.gameObject == null)
+            var parent = handRole == VRControllerInput.roleL ? BetterVRPluginHelper.leftCursorAttach : BetterVRPluginHelper.rightCursorAttach;
+            if (parent == null) return;
+            if (stripIndicator == null || stripIndicator.gameObject == null || stripIndicator.transform.parent != parent)
             {
-                bool isLeftHand = handRole == VRControllerInput.roleL;
                 stripIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
-                stripIndicator.transform.parent =
-                    isLeftHand ?  BetterVRPluginHelper.leftCursorAttach :  BetterVRPluginHelper.rightCursorAttach;
+                stripIndicator.transform.parent = parent;
                 stripIndicator.transform.localScale = Vector3.one / 256f;
                 stripIndicator.transform.localPosition = Vector3.back * 0.0625f;
                 stripIndicator.transform.localRotation = Quaternion.identity;
@@ -201,6 +191,8 @@ namespace BetterVR
             stripIndicator.material.color = STRIP_INDICATOR_COLORS[grabbedStripCollider.clothType];
  
             if (clothIcons == null) finishedLoadingClothIcons = false;
+            LoadClothIconsIfNeeded();
+
             if (!finishedLoadingClothIcons) return;
             for (int i = 0; i < clothIcons.Count; i++)
             {
@@ -239,7 +231,7 @@ namespace BetterVR
 
     public struct ColliderAnatomy
     {
-        public ColliderAnatomy(byte clothType, Vector3? scale = null, Vector3? offset = null, float? radius = null, int sensitivityLevel = 0)
+        public ColliderAnatomy(int clothType, Vector3? scale = null, Vector3? offset = null, float? radius = null, int sensitivityLevel = 0)
         {
             this.clothType = clothType;
             this.scale = scale ?? Vector3.one;
@@ -248,7 +240,7 @@ namespace BetterVR
             this.sensitivityLevel = sensitivityLevel;
         }
 
-        internal byte clothType;
+        internal int clothType;
         internal Vector3 scale;
         internal Vector3 offset;
         internal float radius;
@@ -264,16 +256,16 @@ namespace BetterVR
                 { new Regex(@"Kosi01$"), new ColliderAnatomy(1, scale: Vector3.one * 1.25f) }, // Bottom
                 { new Regex(@"Siri_[LR]$"), new ColliderAnatomy(1, scale: Vector3.one * 1.25f, null, 0.75f, sensitivityLevel: 1) }, // Bottom
                 { new Regex(@"Belly_Mid_High"), new ColliderAnatomy(1, scale: new Vector3(1f, 0.75f, 0.5f), sensitivityLevel: 1) }, // Bottom
-                { new Regex(@"N_Chest$"), new ColliderAnatomy(2, scale: Vector3.one * 1.25f) }, // Top inner
+                { new Regex(@"N_Chest$"), new ColliderAnatomy(2, scale: new Vector3(1.5f, 1f, 1.5f), offset: Vector3.down * 1f) }, // Top inner
                 { new Regex(@"Kokan$|agina_root$"), new ColliderAnatomy(3, sensitivityLevel: 3) }, // Under
                 { new Regex(@"Wrist_dam_[LR]$"), new ColliderAnatomy(4, scale: Vector3.one * 0.5f) }, // Gloves
                 { new Regex(@"LegUp01_[LR]$"), new ColliderAnatomy(5, scale: new Vector3(1.5f, 2f, 1.5f), offset: Vector3.down * 2f, sensitivityLevel: 1) }, // Pants
                 { new Regex(@"LegLow01_[LR]$"), new ColliderAnatomy(5, scale: Vector3.one * 1.25f) }, // Pants
                 { new Regex(@"LegLowRoll_[LR]$"), new ColliderAnatomy(6) }, // Socks
                 { new Regex(@"Foot01_[LR]$"), new ColliderAnatomy(7) }, // Shoes
-                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(8, sensitivityLevel: 2) }, // No cloth, for touching only
-                { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(8, scale: Vector3.one * 1.25f, sensitivityLevel: 1) }, // No cloth, for touching only
-                { new Regex(@"N_Mouth$"), new ColliderAnatomy(8, scale: Vector3.one * 0.5f) } // No cloth, for touching only
+                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(-1, sensitivityLevel: 2) }, // No cloth, for touching only
+                { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(-1, scale: Vector3.one * 1.25f, sensitivityLevel: 1) }, // No cloth, for touching only
+                { new Regex(@"N_Mouth$"), new ColliderAnatomy(-1, scale: Vector3.one * 0.5f) } // No cloth, for touching only
             };
 
         private bool hasAddedColliders = false;
@@ -347,10 +339,10 @@ namespace BetterVR
 
     public class StripCollider : InteractionCollider
     {
-        public byte clothType { get; private set; }
+        public int clothType { get; private set; }
         public byte stripLevel { get { return IsValidClothType(clothType) ? character.fileStatus.clothesState[clothType] : (byte)0; } }
 
-        internal static bool IsValidClothType(byte i) { return 0 <= i && i < 8; }
+        internal static bool IsValidClothType(int i) { return 0 <= i && i < 8; }
 
         internal static InteractionCollider Create(
             ChaControl character, ColliderAnatomy anatomy, Transform parent, Transform scaleReference)
@@ -373,7 +365,7 @@ namespace BetterVR
 
         internal bool IsInteractable()
         {
-            return IsCharacterVisible() && IsValidClothType(clothType) && character.IsClothes(clothType);
+            return IsCharacterVisible() && IsValidClothType(clothType) && character.IsClothesStateKind(clothType);
         }
 
         internal bool StripMore()
