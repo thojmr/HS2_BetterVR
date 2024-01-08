@@ -12,7 +12,7 @@ namespace BetterVR
     public partial class BetterVRPlugin : BaseUnityPlugin 
     {
         public const string GUID = "BetterVR";
-        public const string Version = "0.47";
+        public const string Version = "0.5";
         internal static new ManualLogSource Logger { get; private set; }
 
 #if DEBUG
@@ -120,6 +120,7 @@ namespace BetterVR
                     VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 1:
+                    // InteractionCollider.shouldVisualizeColliders = !InteractionCollider.shouldVisualizeColliders;
                     VRControllerCollider.UpdateDynamicBoneColliders();
                     break;
                 case 2:
