@@ -47,7 +47,7 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
 ## How to install
 Almost all plugins are installed in the same way. If there are any extra steps needed they will be added to the plugin descriptions below.
 1. Make sure you have at least BepInEx 5.1 and latest BepisPlugins and KKAPI (Any BetterRepack will do).
-2. Download the latest release of the plugin you want [here](https://github.com/thojmr/BetterVR/releases).
+2. Download the latest release of the plugin you want [here](https://github.com/KhLTz/HS2_BetterVR/releases).
 3. Extract the archive into your game directory. The file HS2_BetterVR.dll should end up in \BepInEx\plugins\ directory.
 4. Check if there are no warnings on game startup, if the plugin has settings it should appear in plugin settings.
 
