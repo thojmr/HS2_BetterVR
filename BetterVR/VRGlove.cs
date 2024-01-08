@@ -2,8 +2,6 @@ using HTC.UnityPlugin.Vive;
 using HS2VR;
 using IllusionUtility.GetUtility;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Events;
 
 namespace BetterVR
 {
@@ -50,13 +48,15 @@ namespace BetterVR
             if (!shouldShowHand) return;
 
             var camera = BetterVRPluginHelper.VRCamera;
-            if (camera && gloveRenderer.transform.parent != camera.transform)
+            if (camera != null && gloveRenderer.transform.parent != camera.transform)
             {
                 // Parent the renderer to camera to make sure that the gloves stay in the renderer's bounds and do not get culled.
                 gloveRenderer.transform.parent = camera.transform;
                 gloveRenderer.transform.localPosition = Vector3.zero;
-                var bounds = gloveRenderer.GetComponent<SkinnedMeshRenderer>().bounds;
-                BetterVRPlugin.Logger.LogInfo("Glove renderer bounds: " + bounds);
+                var localBounds = gloveRenderer.localBounds;
+                localBounds.center = Vector3.zero;
+                localBounds.extents = Vector3.one * 16;
+                gloveRenderer.localBounds = localBounds;
             }
 
             if (isRepositioning)
