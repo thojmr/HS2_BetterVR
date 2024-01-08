@@ -73,7 +73,7 @@ namespace BetterVR
         {
             get
             {
-                if (CreateTransformIfNotPresent(ref _leftControllerCenter, parent: FindLeftControllerRenderModel(out var center)))
+                if (CreateTransformIfNotPresent(ref _leftControllerCenter, parent: FindLeftControllerRenderModel(out var center)?.parent))
                 {
                     _leftControllerCenter.name = "LeftControllerCenter";
                     _leftControllerCenter.position = center;
@@ -85,7 +85,7 @@ namespace BetterVR
         {
             get
             {
-                if (CreateTransformIfNotPresent(ref _rightControllerCenter, parent: FindRightControllerRenderModel(out var center)))
+                if (CreateTransformIfNotPresent(ref _rightControllerCenter, parent: FindRightControllerRenderModel(out var center)?.parent))
                 {
                     _rightControllerCenter.name = "RightControllerCenter";
                     _rightControllerCenter.position = center;
@@ -232,7 +232,7 @@ namespace BetterVR
         {
             var player = BetterVRPlugin.GetPlayer();
             if (player == null) return;
-            var colliders = player.objTop.GetComponentsInChildren<DynamicBoneCollider>();
+            var colliders = player.objTop.GetComponentsInChildren<DynamicBoneCollider>(true);
             foreach (var collider in colliders)
             {
                 if (HAND_NAME_MATCHER.IsMatch(collider.name))
@@ -278,7 +278,7 @@ namespace BetterVR
                     // Reparent so that it is a sibling instead of a child of simpleBody and
                     // can be displayed even if simpleBody is hidden.
                     simplePClone.transform.SetParent(simpleBody.transform.parent, worldPositionStays: true);
-                    var renderers = simplePClone.GetComponentsInChildren<SkinnedMeshRenderer>();
+                    var renderers = simplePClone.GetComponentsInChildren<SkinnedMeshRenderer>(true);
                     foreach (var renderer in renderers)
                     {
                         renderer.enabled = true;
@@ -290,10 +290,10 @@ namespace BetterVR
             simplePClone?.SetActive(shouldUseSimpleP);
 
             // Hide the original part now that there is a clone.
-            var tamaRenderer = simpleBodyEtc?.objDanTama?.GetComponentInChildren<SkinnedMeshRenderer>();
+            var tamaRenderer = simpleBodyEtc?.objDanTama?.GetComponentInChildren<SkinnedMeshRenderer>(true);
             if (tamaRenderer) tamaRenderer.enabled = false;
 
-            var saoRenderer = simpleBodyEtc?.objDanSao?.GetComponentInChildren<SkinnedMeshRenderer>();
+            var saoRenderer = simpleBodyEtc?.objDanSao?.GetComponentInChildren<SkinnedMeshRenderer>(true);
             if (saoRenderer) saoRenderer.enabled = false;
 
             var regularBodyEtc = player.cmpBody?.targetEtc;
@@ -392,7 +392,7 @@ namespace BetterVR
             Transform renderModel = controller.transform.FindLoop("Model") ?? controller.transform.FindLoop("OpenVRRenderModel");
             if (!renderModel) return null;
             
-            var meshFilter = renderModel.GetComponentInChildren<MeshFilter>();
+            var meshFilter = renderModel.GetComponentInChildren<MeshFilter>(true);
             center =
                 meshFilter ? meshFilter.transform.TransformPoint(meshFilter.mesh.bounds.center) : controller.transform.position;
 
@@ -403,7 +403,7 @@ namespace BetterVR
         {
             if (!renderModel) return;
             bool shouldShowController = !VRGlove.isShowingGloves || !BetterVRPlugin.IsHidingControllersEnabled();
-            var renderers = renderModel.GetComponentsInChildren<MeshRenderer>();
+            var renderers = renderModel.GetComponentsInChildren<MeshRenderer>(true);
             foreach (var renderer in renderers) renderer.enabled = shouldShowController;
         }
 
@@ -434,7 +434,7 @@ namespace BetterVR
                 var player = BetterVRPlugin.GetPlayer();
                 if (!player || !player.loadEnd) return;
 
-                var source = player.cmpSimpleBody?.targetEtc?.objBody?.GetComponentInChildren<SkinnedMeshRenderer>();
+                var source = player.cmpSimpleBody?.targetEtc?.objBody?.GetComponentInChildren<SkinnedMeshRenderer>(true);
                 if (!source) return;
 
                 var meshRenderer = GetComponent<MeshRenderer>();
