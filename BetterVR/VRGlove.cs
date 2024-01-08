@@ -217,13 +217,13 @@ namespace BetterVR
                     ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.PadTouch) ||
                     ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.MenuTouch))
                 {
-                    thumb.localRotation = Quaternion.Euler(0, 0, 5 * rotationFactor);
-                    thumb.GetChild(0).localRotation = Quaternion.Euler(0, 0, 30 * rotationFactor);
+                    thumb.localRotation = Quaternion.Euler(0, 10 * rotationFactor, 5 * rotationFactor);
+                    thumb.GetChild(0).localRotation = Quaternion.Euler(0, 5 * rotationFactor, 30 * rotationFactor);
                 }
                 else
                 {
-                    thumb.localRotation = Quaternion.Euler(0, 0, 20 * rotationFactor);
-                    thumb.GetChild(0).localRotation = Quaternion.Euler(0, 15 * rotationFactor, 35 * rotationFactor);
+                    thumb.localRotation = Quaternion.Euler(0, 15 * rotationFactor, 20 * rotationFactor);
+                    thumb.GetChild(0).localRotation = Quaternion.Euler(0, 10 * rotationFactor, 35 * rotationFactor);
                 }
             }
 
