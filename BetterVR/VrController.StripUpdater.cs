@@ -263,7 +263,8 @@ namespace BetterVR
                 { new Regex(@"LegLow01_[LR]$"), new ColliderAnatomy(5, scale: Vector3.one * 1.25f) }, // Pants
                 { new Regex(@"LegLowRoll_[LR]$"), new ColliderAnatomy(6) }, // Socks
                 { new Regex(@"Foot01_[LR]$"), new ColliderAnatomy(7) }, // Shoes
-                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(-1, sensitivityLevel: 2) }, // No cloth, for touching only
+                { new Regex(@"Mune01_[LR]$"), new ColliderAnatomy(-1, scale: Vector3.one * 1.5f, sensitivityLevel: 2) }, // No cloth, for touching only
+                { new Regex(@"Mune_Nip01_[LR]$"), new ColliderAnatomy(-1, scale: Vector3.one * 0.25f, sensitivityLevel: 2) }, // No cloth, for touching only
                 { new Regex(@"cf_J_Neck$"), new ColliderAnatomy(-1, scale: Vector3.one * 1.25f, sensitivityLevel: 1) }, // No cloth, for touching only
                 { new Regex(@"N_Mouth$"), new ColliderAnatomy(-1, scale: Vector3.one * 0.5f) } // No cloth, for touching only
             };
