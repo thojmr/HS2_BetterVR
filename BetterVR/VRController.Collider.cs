@@ -28,9 +28,9 @@ namespace BetterVR
 			foreach (var character in females)
             {
 				if (character == null) continue;
-				var dynamicBones = character.GetComponentsInChildren<DynamicBone>();
+				var dynamicBones = character.GetComponentsInChildren<DynamicBone>(true);
 				foreach (var bone in dynamicBones) AddCollidersToBone(bone);
-				var dynamicBonesV2 = character.GetComponentsInChildren<DynamicBone_Ver02>();
+				var dynamicBonesV2 = character.GetComponentsInChildren<DynamicBone_Ver02>(true);
 				foreach (var bone in dynamicBonesV2) AddCollidersToBone(bone);
 			}
 		}
