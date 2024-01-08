@@ -164,7 +164,7 @@ namespace BetterVR
 			AddColliderToBone(rightControllerCollider, bone);
 			AddColliderToBone(mouthCollider, bone);
 			AddColliderToBone(floorCollider, bone);
-			AddColliderToBone(rightControllerCollider, bone);
+			AddColliderToBone(BetterVRPluginHelper.handHeldToy?.collider, bone);
 			AddColliderToBone(BetterVRPluginHelper.leftGlove?.GetComponent<FingerPoseUpdater>()?.indexCollider, bone, INDEX_COLLIDING_BONE_MATCHER);
 			AddColliderToBone(BetterVRPluginHelper.rightGlove?.GetComponent<FingerPoseUpdater>()?.indexCollider, bone, INDEX_COLLIDING_BONE_MATCHER);
 		}
