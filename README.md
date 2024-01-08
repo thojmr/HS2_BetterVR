@@ -29,7 +29,7 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
     - Press either trigger to finish adjustment
 - Adds a hand-held toy that can be toggled on in the radial menu
     - Use radial menu to toggle it again to change it into silhouette mode
-    - When holding it, press A or X to attach to it to body (approximately using camera position)
+    - When holding it, press A or X to attach to it to body (approximated using camera position)
 - Adds feature of using hand movement to adjust H speed.
     - Start H animation regularly using controller pad/stick first
     - Move hand, mouth, or toy close to certain body parts and start moving
