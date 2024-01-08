@@ -32,8 +32,9 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
     - When holding it, press A or X to attach to it to body (approximated using camera position)
 - Adds feature of using hand movement to adjust H speed.
     - Start H animation regularly using controller pad/stick first
+        - In Aibu mode the animation can be started or stopped solely using by changin hand speed without using pad or stick 
     - Move hand, mouth, or toy close to certain body parts and start moving
-    - Haptic feedback (if enabled) indicates that the this feature is in action
+    - Haptic feedback (if enabled) indicates that this feature is in action
     - Look for a heart icon that may show up which indicates pleasure gauge hit
 - Adds option to skip title scene on game start and go straight to select scene.
 - Adds option to unlock all positions regardless of character state.
