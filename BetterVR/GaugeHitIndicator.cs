@@ -17,7 +17,7 @@ namespace BetterVR
         {
             get
             {
-                if (!_headIndicator) _headIndicator = CreateIndicator(BetterVRPluginHelper.VROrigin?.transform);
+                if (!_headIndicator) _headIndicator = CreateIndicator();
                 return _headIndicator;
             }
         }
@@ -25,7 +25,7 @@ namespace BetterVR
         {
             get
             {
-                if (!_leftHandIndicator) _leftHandIndicator = CreateIndicator(BetterVRPluginHelper.leftControllerCenter);
+                if (!_leftHandIndicator || _leftHandIndicator.gameObject == null) _leftHandIndicator = CreateIndicator();
                 return _leftHandIndicator;
             }
         }
@@ -33,7 +33,7 @@ namespace BetterVR
         {
             get
             {
-                if (!_rightHandIndicator) _rightHandIndicator = CreateIndicator(BetterVRPluginHelper.rightControllerCenter);
+                if (!_rightHandIndicator || _rightHandIndicator.gameObject == null) _rightHandIndicator = CreateIndicator();
                 return _rightHandIndicator;
             }
         }
@@ -74,31 +74,39 @@ namespace BetterVR
 
             if (camera == null || vrOrigin == null) return;
 
-            headIndicator.transform.position = Vector3.SmoothDamp(
-                headIndicator.transform.position,
-                camera.transform.TransformPoint(0, 0.25f, 0.75f),
-                ref headIndicatorVelocity,
-                1f);
+            var upDirectionInCamera = camera.transform.TransformVector(
+                ((Vector2) camera.transform.InverseTransformVector(vrOrigin.transform.up)).normalized);
+
+            var targetPosition = GetHeadIndicatorTargetPosition(camera.transform, upDirectionInCamera * 0.375f);
+            if (smoothGaugeHit < 1 / 64f)
+            {
+                headIndicator.transform.position = targetPosition;
+                headIndicatorVelocity = Vector3.zero;
+            }
+            else
+            {
+                headIndicator.transform.position = Vector3.SmoothDamp(
+                    headIndicator.transform.position,
+                    targetPosition,
+                    ref headIndicatorVelocity,
+                    1f);
+            }
             headIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
 
-            var leftParent = BetterVRPluginHelper.leftControllerCenter;
-            var rightParent = BetterVRPluginHelper.rightControllerCenter;
-            var offset = vrOrigin.transform.TransformVector(Vector3.up * 0.0625f);
+            var offsetFromHand = upDirectionInCamera * 0.0625f;
 
-            if (leftParent != null) {
-                if (leftHandIndicator.transform.parent != leftParent) leftHandIndicator.transform.parent = leftParent;
-                leftHandIndicator.transform.position = leftParent.position + offset;
+            if (BetterVRPluginHelper.leftControllerCenter != null) {
+                leftHandIndicator.transform.position = BetterVRPluginHelper.leftControllerCenter.position + offsetFromHand;
                 leftHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
             }
 
-            if (rightParent != null)
+            if (BetterVRPluginHelper.rightControllerCenter != null)
             {
-                if (rightHandIndicator.transform.parent != rightParent) rightHandIndicator.transform.parent = rightParent;
-                rightHandIndicator.transform.position = rightParent.position + offset;
+                rightHandIndicator.transform.position = BetterVRPluginHelper.rightControllerCenter.position + offsetFromHand;
                 rightHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
             }
 
-            UpdateIndicatorSizeAndColor(isGaugeHit);
+            UpdateSizeAndColor(isGaugeHit);
         }
 
         private bool IsGaugeHit()
@@ -107,7 +115,37 @@ namespace BetterVR
             return ctrl != null && ctrl.isGaugeHit && ctrl.loopType != -1;
         }
 
-        private void UpdateIndicatorSizeAndColor(bool isGaugeHit)
+        private Vector3 GetHeadIndicatorTargetPosition(Transform camera, Vector3 offset)
+        {
+            var characters = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetFemales();
+
+            // Default position of the gauge hit indicator relative to the camera.
+            var p = new Vector3(0, 0.25f, 1f);
+
+            if (characters != null)
+            {
+                foreach (var character in characters)
+                {
+                    if (character == null || !character.isActiveAndEnabled || !character.visibleAll) continue;
+                    // A spot above the character's head.
+                    var target =
+                        camera.InverseTransformPoint(character.objHeadBone.transform.TransformPoint(Vector3.up * 0.125f) + offset);
+                    
+                    // If the target is too near or too far, do not use it.
+                    if (target.z < 0.125f || target.z > 1) continue;
+
+                    // If the target is too much off the center of view, do not use it.
+                    if (Mathf.Abs(target.x) > target.z * 0.75f || Mathf.Abs(target.y) > target.z * 0.75f) continue;
+                    
+                    // Snap gauge hit indicator above the character's head.
+                    p = target;
+                    break;
+                }
+            }
+            return camera.TransformPoint(p);
+        }
+
+        private void UpdateSizeAndColor(bool isGaugeHit)
         {
             var feelLevel = Singleton<HSceneFlagCtrl>.Instance?.feel_f ?? 0;
             Color color =
@@ -117,7 +155,7 @@ namespace BetterVR
 
             if (headIndicator)
             {
-                headIndicator.transform.localScale = Vector3.one * smoothGaugeHit * 0.02f;
+                headIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 32;
                 headIndicator.color = color;
             }
             if (leftHandIndicator)
@@ -139,16 +177,19 @@ namespace BetterVR
             return feelLevel > 0.97f;
         }
 
-        private static TextMeshPro CreateIndicator(Transform cursorAttach)
+        private static TextMeshPro CreateIndicator()
         {
-            if (!cursorAttach) return null;
+            Transform parent = BetterVRPluginHelper.VROrigin?.transform;
+            if (parent == null) return null;
             var textMesh =
                 new GameObject().AddComponent<Canvas>().gameObject.AddComponent<TextMeshPro>();
-            textMesh.transform.SetParent(cursorAttach);
+     
+            textMesh.transform.SetParent(parent);
             textMesh.text = "\u2665";
             textMesh.fontSize = 16;
             textMesh.color = new Color(1, 0.25f, 0.25f);
             textMesh.alignment = TextAlignmentOptions.Center;
+
             return textMesh;
         }
     }
