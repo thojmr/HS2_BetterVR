@@ -44,11 +44,8 @@ namespace BetterVR
 
             if (controller.transform.Find("LaserPointer") == null) return;
 
-            // LaserSync not only offsets the laser angle, but also reduces the lag of laser movement.
             laserSync = raycaster.GetOrAddComponent<LaserSync>();
             laserSync.source = new GameObject(raycaster.name + "_originalTransform").transform;
-
-            // Parent the laser sync to the controller model so that its position and rotation is in sync with the controller.
             laserSync.source.parent = controllerCenter;
             laserSync.source.SetPositionAndRotation(raycaster.transform.position, raycaster.transform.rotation);
             
@@ -58,24 +55,29 @@ namespace BetterVR
 
     class LaserSync : MonoBehaviour
     {
-        internal Transform source;
+        internal Transform source; // TODO: remove
         private float offsetAngle = 0;
-        private Quaternion rotationOffset = Quaternion.identity;
         
         void Update()
         {
-            if (source == null) return;
+            if (offsetAngle == BetterVRPlugin.SetVRControllerPointerAngle.Value) return;
+            offsetAngle = BetterVRPlugin.SetVRControllerPointerAngle.Value;
 
-            if (offsetAngle != BetterVRPlugin.SetVRControllerPointerAngle.Value)
+            var oldAngles = transform.localRotation.eulerAngles;
+
+            // Rotate the laser pointer to the desired angle.
+            transform.localRotation = Quaternion.Euler(-offsetAngle, 0, 0);
+
+            BetterVRPlugin.Logger.LogInfo("Updated laser pointer rotation: " + oldAngles + " -> " + transform.localRotation.eulerAngles);
+
+            var stabilizer = gameObject.GetComponentInParent<HTC.UnityPlugin.PoseTracker.PoseStablizer>();
+            if (stabilizer)
             {
-                offsetAngle = BetterVRPlugin.SetVRControllerPointerAngle.Value;
-                rotationOffset = Quaternion.Euler(-offsetAngle, 0, 0);
-            } 
-
-            // Move the object to the desired positon and rotation relative to the controller model.
-            // The vanilla laser pointer stabilization is too aggressive and causes a laggy feel.
-            // Updating the laser direction here also reduces soem of the lag.
-            transform.SetPositionAndRotation(source.position, source.rotation * rotationOffset);
+                // The vanilla laser pointer stabilization is too aggressive and causes a laggy feel.
+                // Reduce the thresholds for a better balance between stability and responsiveness.
+                stabilizer.positionThreshold = 0;
+                stabilizer.rotationThreshold = 0.5f;
+            }          
         }
     }
 }
