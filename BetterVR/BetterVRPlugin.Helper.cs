@@ -204,14 +204,14 @@ namespace BetterVR
         // Moves VR camera to the player's head.
         internal static void ResetView()
         {
-            VRControllerInput.ClearRecordedVrOriginTransform();
+            if (!VROrigin) return;
 
-            if (VROrigin)
-            {
-                // Remove any vertical rotation.
-                Quaternion rotation = VROrigin.transform.rotation;
-                VROrigin.transform.rotation = Quaternion.Euler(0, rotation.y, 0);
-            }
+            var preventInitCamera = VROrigin.GetComponent<VRControllerInput.PreventMovement>();
+            if (preventInitCamera) preventInitCamera.enabled = false;
+
+            // Remove any vertical rotation.
+            Quaternion rotation = VROrigin.transform.rotation;
+            VROrigin.transform.rotation = Quaternion.Euler(0, rotation.y, 0);
 
             recenterVR?.Invoke();
             VRSettingUI.CameraInitAction?.Invoke();
@@ -335,6 +335,14 @@ namespace BetterVR
         {
             EnsurePrivacyScreen().gameObject.SetActive(BetterVRPlugin.UsePrivacyScreen.Value);
             if (color != null) privacyScreen.color = (Color) color;
+        }
+
+        internal static Vector2 GetLeftHandPadStickCombinedOutput()
+        {
+            Vector2 output = ViveInput.GetPadAxisEx<HandRole>(HandRole.LeftHand);
+            output.x += ViveInput.GetAxisEx<HandRole>(HandRole.LeftHand, ControllerAxis.JoystickX);
+            output.y += ViveInput.GetAxisEx<HandRole>(HandRole.LeftHand, ControllerAxis.JoystickY);
+            return output;
         }
 
         internal static Vector2 GetRightHandPadStickCombinedOutput()
