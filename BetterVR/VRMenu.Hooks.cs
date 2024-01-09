@@ -72,12 +72,10 @@ namespace BetterVR
                 return;
             }
 
-            if (Manager.Config.HData.InitCamera)
-            {
-                return;
-            }
+            if (Manager.Config.HData.InitCamera) return;
 
-            VRControllerInput.RecordVrOriginTransform();
+            var preventInitCamera = BetterVRPluginHelper.VROrigin?.GetOrAddComponent<VRControllerInput.PreventMovement>();
+            if (preventInitCamera) preventInitCamera.enabled = true;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), nameof(HScene.ChangeAnimation))]
@@ -134,6 +132,20 @@ namespace BetterVR
         internal static void CheckStartBasePrefix()
         {
             PositionUnlockPatch(HSceneManager.HResourceTables);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(AIChara.ChaControl), "UpdateVisible")]
+        private static void UpdateVisible()
+        {
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(OpenUICrtl), "Start")]
+        private static void OpenUICrtlPatch(OpenUICtrl __instance)
+        {
+            __instance.GetOrAddComponent<VRControllerInput.MenuAutoGrab>();
         }
 
         [HarmonyPrefix, HarmonyPatch(typeof(DynamicBone_Ver02), "Awake")]
