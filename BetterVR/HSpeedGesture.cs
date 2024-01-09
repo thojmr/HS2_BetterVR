@@ -266,7 +266,7 @@ namespace BetterVR
             // Reduce feel increase rate for realism.
             hCtrl.speedGuageRate = hCtrl.feel_f < 0.75f ? CUSTOM_SPEED_GAUGE_RATE : ORIGINAL_SPEED_GAUGE_RATE;
 
-            if (hCtrl.isGaugeHit)
+            if (hCtrl.isGaugeHit && Manager.Config.HData.FeelingGauge)
             {
                 if (gaugeHitIndicator == null)
                 {
