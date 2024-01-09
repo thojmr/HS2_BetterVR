@@ -47,6 +47,13 @@ namespace BetterVR
             transform.parent = hand;
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.Euler(90, 0, 0);
+            var camera = BetterVRPluginHelper.VRCamera?.transform;
+            if (camera)
+            {
+                transform.rotation = Quaternion.LookRotation(
+                    Vector3.ProjectOnPlane(transform.position - camera.position, transform.up),
+                    transform.up);
+            }
             transform.localScale = Vector3.one;
             transform.SetParent(BetterVRPluginHelper.VROrigin?.transform, worldPositionStays: true);
             selectedItemIndex = -1;
