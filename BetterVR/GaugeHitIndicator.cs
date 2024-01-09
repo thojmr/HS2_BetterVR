@@ -3,194 +3,201 @@ using UnityEngine;
 
 namespace BetterVR
 {
-    internal class GaugeHitIndicator
+    internal class GaugeHitIndicator : MonoBehaviour
     {
         private static readonly Color START_COLOR = new Color(0.5f, 0.25f, 0.25f);
-        private static readonly Color FINISH_COLOR = new Color(1, 0.125f, 0.125f);
-        private float smoothGaugeHit = 0;
-        private float acceleration;
-        private Vector3 headIndicatorVelocity = Vector3.zero;
-        private TextMeshPro _headIndicator = null;
-        private TextMeshPro _leftHandIndicator = null;
-        private TextMeshPro _rightHandIndicator = null;
-        private TextMeshPro headIndicator
+        private static readonly Color FINISH_COLOR = Color.red;
+        private const int H_CAMERA_LAYER = 22;
+
+        internal float smoothGaugeHit { get; private set; }  = 0;
+        private float gaugeAcceleration;
+        private Vector3 velocity = Vector3.zero;
+
+        private static Camera _gaugeCamera;
+        private static Camera gaugeCamera
         {
             get
             {
-                if (!_headIndicator) _headIndicator = CreateIndicator();
-                return _headIndicator;
-            }
-        }
-        private TextMeshPro leftHandIndicator
-        {
-            get
-            {
-                if (!_leftHandIndicator || _leftHandIndicator.gameObject == null) _leftHandIndicator = CreateIndicator();
-                return _leftHandIndicator;
-            }
-        }
-        private TextMeshPro rightHandIndicator
-        {
-            get
-            {
-                if (!_rightHandIndicator || _rightHandIndicator.gameObject == null) _rightHandIndicator = CreateIndicator();
-                return _rightHandIndicator;
+                var vrCamera = BetterVRPluginHelper.VRCamera;
+                if (vrCamera == null) return null;
+                if (_gaugeCamera == null)
+                {
+                    _gaugeCamera = new GameObject().AddComponent<Camera>();
+                    _gaugeCamera.clearFlags = CameraClearFlags.Depth;
+                    BetterVRPlugin.Logger.LogInfo("VRCamera depth: " + vrCamera.depth + " culling mask: " + vrCamera.cullingMask);
+                    _gaugeCamera.depth = 1;
+                    _gaugeCamera.cullingMask = 1 << H_CAMERA_LAYER;
+                    _gaugeCamera.renderingPath = RenderingPath.VertexLit;
+                }
+                if (_gaugeCamera.transform.parent != vrCamera.transform.parent)
+                {
+                    // There is some script that automaticallly moves all cameras in the scene with HMD,
+                    // so there is no need to parent the UI camera to the VR camera itself.
+                    _gaugeCamera.transform.parent = vrCamera.transform.parent;
+                    _gaugeCamera.transform.position = vrCamera.transform.position;
+                    _gaugeCamera.transform.rotation = vrCamera.transform.rotation;
+                    _gaugeCamera.transform.localScale = vrCamera.transform.localScale;
+                }
+                return _gaugeCamera;
             }
         }
 
-        internal void UpdateIndicators(bool isHSpeedGestureEffective)
+        private TextMeshPro _heartSymbol = null;
+        private TextMeshPro _horizontalLines = null;
+        private TextMeshPro heartSymbol
         {
-            if (!leftHandIndicator || !rightHandIndicator || !headIndicator) return;
+            get { return _heartSymbol ?? (_heartSymbol = CreateSymbol("\u2665")); }
+        }
+        private TextMeshPro horizontalLines
+        {
+            get { return _horizontalLines ?? (_horizontalLines = CreateSymbol("- -")); }
+        }
 
-            bool isGaugeHit = IsGaugeHit();
+        void FixedUpdate()
+        {
+            var ctrl = Singleton<HSceneFlagCtrl>.Instance;
+            var camera = BetterVRPluginHelper.VRCamera;
+            var vrOrigin = BetterVRPluginHelper.VROrigin;
+            if (!camera || !vrOrigin || !ctrl || !heartSymbol || !horizontalLines) return;
 
-            if (isGaugeHit && (isHSpeedGestureEffective || smoothGaugeHit > 0))
+            bool isGaugeHit = ctrl.isGaugeHit && ctrl.loopType != -1;
+
+            if (transform.parent != vrOrigin.transform)
             {
-                leftHandIndicator.gameObject.SetActive(true);
-                rightHandIndicator.gameObject.SetActive(true);
-                headIndicator.gameObject.SetActive(true);
-                smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, 1, ref acceleration, 0.125f);
+                transform.parent = vrOrigin.transform;
+                transform.localScale = Vector3.one / 32;
             }
-            else if (!leftHandIndicator.isActiveAndEnabled && !rightHandIndicator.isActiveAndEnabled && !headIndicator.isActiveAndEnabled)
+
+            if (isGaugeHit)
             {
-                return;
+                gaugeCamera.enabled = true;
+                smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, 1, ref gaugeAcceleration, 0.125f);
             }
             else
             {
-                smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, -0.125f, ref acceleration, 0.25f);
+                smoothGaugeHit = Mathf.SmoothDamp(smoothGaugeHit, -0.125f, ref gaugeAcceleration, 0.25f);
                 if (smoothGaugeHit < 0)
                 {
                     smoothGaugeHit = 0;
-                    acceleration = 0;
-                    headIndicator.gameObject.SetActive(false);
-                    leftHandIndicator.gameObject.SetActive(false);
-                    rightHandIndicator.gameObject.SetActive(false);
+                    gaugeAcceleration = 0;
+                    gameObject.SetActive(false);
                     return;
                 }
             }
 
-            var camera = BetterVRPluginHelper.VRCamera;
-            var vrOrigin = BetterVRPluginHelper.VROrigin;
-
-            if (camera == null || vrOrigin == null) return;
-
             var upDirectionInCamera = camera.transform.TransformVector(
                 ((Vector2) camera.transform.InverseTransformVector(vrOrigin.transform.up)).normalized);
+            var targetPosition = GetSnapPosition(camera.transform, upDirectionInCamera);
+            bool snappedToTarget = (targetPosition != null);
 
-            var targetPosition = GetHeadIndicatorTargetPosition(camera.transform, upDirectionInCamera * 0.375f);
-            if (smoothGaugeHit < 1 / 64f)
+            if (targetPosition == null)
             {
-                headIndicator.transform.position = targetPosition;
-                headIndicatorVelocity = Vector3.zero;
+                targetPosition = camera.transform.TransformPoint(0f, 0, 0.5f) + 0.1875f * upDirectionInCamera;
+            }
+
+            if (smoothGaugeHit > 1 / 64f)
+            {
+                transform.position = Vector3.SmoothDamp(
+                    transform.position, (Vector3) targetPosition, ref velocity, 1f);
             }
             else
             {
-                headIndicator.transform.position = Vector3.SmoothDamp(
-                    headIndicator.transform.position,
-                    targetPosition,
-                    ref headIndicatorVelocity,
-                    1f);
-            }
-            headIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-
-            var offsetFromHand = upDirectionInCamera * 0.0625f;
-
-            if (BetterVRPluginHelper.leftControllerCenter != null) {
-                leftHandIndicator.transform.position = BetterVRPluginHelper.leftControllerCenter.position + offsetFromHand;
-                leftHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
+                transform.position = (Vector3)targetPosition;
+                velocity = Vector3.zero;
             }
 
-            if (BetterVRPluginHelper.rightControllerCenter != null)
-            {
-                rightHandIndicator.transform.position = BetterVRPluginHelper.rightControllerCenter.position + offsetFromHand;
-                rightHandIndicator.transform.LookAt(camera.transform.position, vrOrigin.transform.up);
-            }
+            transform.LookAt(camera.transform.position, upDirectionInCamera);
 
-            UpdateSizeAndColor(isGaugeHit);
+            UpdateSymbols(ctrl, snappedToTarget);
         }
 
-        private bool IsGaugeHit()
-        {
-            var ctrl = Singleton<HSceneFlagCtrl>.Instance;
-            return ctrl != null && ctrl.isGaugeHit && ctrl.loopType != -1;
-        }
-
-        private Vector3 GetHeadIndicatorTargetPosition(Transform camera, Vector3 offset)
+        private Vector3? GetSnapPosition(Transform camera, Vector3 upDirection)
         {
             var characters = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetFemales();
-
-            // Default position of the gauge hit indicator relative to the camera.
-            var p = new Vector3(0, 0.25f, 1f);
 
             if (characters != null)
             {
                 foreach (var character in characters)
                 {
                     if (character == null || !character.isActiveAndEnabled || !character.visibleAll) continue;
-                    // A spot above the character's head.
-                    var target =
-                        camera.InverseTransformPoint(character.objHeadBone.transform.TransformPoint(Vector3.up * 0.125f) + offset);
-                    
-                    // If the target is too near or too far, do not use it.
-                    if (target.z < 0.125f || target.z > 1) continue;
-
-                    // If the target is too much off the center of view, do not use it.
-                    if (Mathf.Abs(target.x) > target.z * 0.75f || Mathf.Abs(target.y) > target.z * 0.75f) continue;
-                    
-                    // Snap gauge hit indicator above the character's head.
-                    p = target;
-                    break;
+                    var head = character.objHeadBone.transform.position;
+                    var target = head + upDirection * 0.25f;
+                    if (isTargetInSnapRange(target, camera)) return target; 
                 }
             }
-            return camera.TransformPoint(p);
+
+            return null;
         }
 
-        private void UpdateSizeAndColor(bool isGaugeHit)
+        private TextMeshPro CreateSymbol(string text)
         {
-            var feelLevel = Singleton<HSceneFlagCtrl>.Instance?.feel_f ?? 0;
+            var textMesh = new GameObject().AddComponent<Canvas>().gameObject.AddComponent<TextMeshPro>();
+            textMesh.transform.SetParent(transform);
+            textMesh.transform.localPosition = Vector3.zero;
+            textMesh.transform.localRotation = Quaternion.identity;
+            textMesh.text = text;
+            textMesh.fontSize = 16;
+            textMesh.color = new Color(1, 0.25f, 0.25f);
+            textMesh.alignment = TextAlignmentOptions.Center;
+            textMesh.gameObject.layer = H_CAMERA_LAYER;
+
+            textMesh.renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            textMesh.renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            textMesh.renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+
+            return textMesh;
+        }
+
+        private void UpdateSymbols(HSceneFlagCtrl ctrl, bool snappedToTarget)
+        {
+            var feelLevel = ctrl.feel_f;
             Color color =
-                ShouldUsePulsingColor(isGaugeHit, feelLevel) ?
-                Color.Lerp(FINISH_COLOR, Color.white, Mathf.Abs((Time.time * 4) % 2 - 1)) :
+                ShouldUsePulsingColor(ctrl.isGaugeHit, feelLevel) ?
+                Color.Lerp(FINISH_COLOR, Color.white, Mathf.Abs(GetPulsePhase(Singleton<HSceneFlagCtrl>.Instance))) :
                 Color.Lerp(START_COLOR, FINISH_COLOR, feelLevel * feelLevel);
 
-            if (headIndicator)
-            {
-                headIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 32;
-                headIndicator.color = color;
-            }
-            if (leftHandIndicator)
-            {
-                leftHandIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 64;
-                leftHandIndicator.color = color;
-            }
-            if (rightHandIndicator)
-            {
-                rightHandIndicator.transform.localScale = Vector3.one * smoothGaugeHit / 64;
-                rightHandIndicator.color = color;
-            }
+            heartSymbol.transform.localScale = Vector3.one * smoothGaugeHit;
+            heartSymbol.color = color;
+            heartSymbol.transform.localRotation = GetRotationPulse(Singleton<HSceneFlagCtrl>.Instance);
+
+            float h = horizontalLines.transform.localScale.y;
+            h = Mathf.Lerp(h, snappedToTarget ? -0.5f : 1.25f, Time.deltaTime * 2);
+            horizontalLines.transform.localScale = new Vector3(smoothGaugeHit * 5, Mathf.Clamp(h, 0, smoothGaugeHit), 1);
+            horizontalLines.color = color;
+        }
+
+        internal static float GetPulsePhase(HSceneFlagCtrl ctrl)
+        {
+            if (ctrl == null) return 0;
+            if (ctrl.feel_f >= 0.96f) return (Time.time * 3.5f) % 2 - 1;
+            if (ctrl.feel_f >= 0.75f) return (Time.time * 2) % 2 - 1;
+            return (Time.time * 1.5f) % 2 - 1;
         }
 
         private static bool ShouldUsePulsingColor(bool isGaugeHit, float feelLevel)
         {
             if (!isGaugeHit) return false;
-            if (feelLevel > 0.735f && feelLevel < 0.75f) return true;
+            if (feelLevel > 0.74f && feelLevel < 0.75f) return true;
             return feelLevel > 0.97f;
         }
 
-        private static TextMeshPro CreateIndicator()
+        private static Quaternion GetRotationPulse(HSceneFlagCtrl ctrl)
         {
-            Transform parent = BetterVRPluginHelper.VROrigin?.transform;
-            if (parent == null) return null;
-            var textMesh =
-                new GameObject().AddComponent<Canvas>().gameObject.AddComponent<TextMeshPro>();
-     
-            textMesh.transform.SetParent(parent);
-            textMesh.text = "\u2665";
-            textMesh.fontSize = 16;
-            textMesh.color = new Color(1, 0.25f, 0.25f);
-            textMesh.alignment = TextAlignmentOptions.Center;
+            return Quaternion.Euler(0, 0, Mathf.Lerp(-15, 15, Mathf.Abs(GetPulsePhase(ctrl))));
+        }
 
-            return textMesh;
+        private static bool isTargetInSnapRange(Vector3 target, Transform camera)
+        {
+            var localPoint = camera.InverseTransformPoint(target);
+
+            // If the target is too near or too far, do not snap the indicator to it.
+            if (localPoint.z < 0.125f || localPoint.z > 0.75f) return false;
+
+            // If the target is too much off the center of view, do not snap the indicator to it.
+            if (Mathf.Abs(localPoint.x) > localPoint.z * 0.375f) return false;
+            if (localPoint.y < localPoint.z * (-0.5f) || localPoint.y > localPoint.z * 0.25f) return false;
+
+            return true;
         }
     }
 }
