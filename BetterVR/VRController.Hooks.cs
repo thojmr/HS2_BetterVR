@@ -24,6 +24,7 @@ namespace BetterVR
         internal static void LaserPointer_SetLeftLaserPointerActive(ControllerManager __instance, bool value)
         {
             if (!value) return;
+            VRControllerInput.controllerManager = __instance;
             pluginInstance.StartCoroutine(
                 VRControllerPointer.SetLaserAngleWithDelay(BetterVRPluginHelper.VR_Hand.left));
         }
@@ -32,6 +33,7 @@ namespace BetterVR
         internal static void LaserPointer_SetRightLaserPointerActive(ControllerManager __instance, bool value)
         {
             if (!value) return;
+            VRControllerInput.controllerManager = __instance;
             pluginInstance.StartCoroutine(
                 VRControllerPointer.SetLaserAngleWithDelay(BetterVRPluginHelper.VR_Hand.right));
         }
