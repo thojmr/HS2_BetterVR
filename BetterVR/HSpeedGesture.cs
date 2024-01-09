@@ -59,12 +59,12 @@ namespace BetterVR
         void Awake()
         {
             if (receiver == null) receiver = new GameObject("HSpeedGestureReceiver").AddComponent<HSpeedGestureReceiver>();
-            receiver.AddGesture(this);
+            receiver.AddSourceGesture(this);
         }
 
         void OnDestroy()
         {
-            receiver.RemoveGesture(this);
+            receiver.RemoveSourceGesture(this);
         }
 
         void FixedUpdate()
@@ -78,6 +78,7 @@ namespace BetterVR
                 + VivePose.GetAngularVelocity(roleProperty).magnitude * 0.0625f;
             isTouching = ShouldBeTouching(speed);
             if (!isTouching) return;
+            receiver.enabled = true;
 
             var hScene = Singleton<Manager.HSceneManager>.Instance?.Hscene;
             var anim = hScene?.GetProcBase();
@@ -91,7 +92,7 @@ namespace BetterVR
             }
             else if (isTouching && speed > 0)
             {
-                TriggerTouchingHaptic(hCtrl.isGaugeHit);
+                TriggerTouchingHaptic(hCtrl);
             }
         }
 
@@ -172,12 +173,30 @@ namespace BetterVR
             } 
         }
 
-        private void TriggerTouchingHaptic(bool isGaugeHit)
+        private void TriggerTouchingHaptic(HSceneFlagCtrl ctrl)
         {
             if (BetterVRPlugin.HapticFeedbackIntensity.Value == 0) return;
 
-            var amplitude = speed / 4 * BetterVRPlugin.HapticFeedbackIntensity.Value;
-            var frequency = isGaugeHit ? 120 : 35;
+            var amplitude = BetterVRPlugin.HapticFeedbackIntensity.Value;
+            if (receiver?.gaugeHitIndicator && receiver.gaugeHitIndicator.smoothGaugeHit > 0.25f)
+            {
+                // Emulate heart beats
+                float strength = (1 - GaugeHitIndicator.GetPulsePhase(ctrl)) % 1;
+                if (ctrl.feel_f >= 0.75f)
+                {
+                    amplitude *= strength;
+                }
+                else
+                {
+                    amplitude *= Mathf.Lerp(0.5f, 0.0625f, strength);
+                }
+            }
+            else
+            {
+                // Emulate touch feel
+                amplitude *= speed / 4;
+            }
+            var frequency = 35;
             if (roleProperty != VRControllerInput.roleH)
             {
                 ViveInput.TriggerHapticVibration(roleProperty, frequency: frequency, amplitude: amplitude);
@@ -201,9 +220,9 @@ namespace BetterVR
 
     public class HSpeedGestureReceiver : MonoBehaviour
     {
-        internal const float IDLE_SPEED = -8f/64;
-        internal const float MIN_EFFECTIVE_SPEED = -7f/64;
-        internal const float LOOP_0_DEACTIVATION_THRESHOLD = -6f/64;
+        internal const float IDLE_SPEED = -8f / 64;
+        internal const float MIN_EFFECTIVE_SPEED = -7f / 64;
+        internal const float LOOP_0_DEACTIVATION_THRESHOLD = -6f / 64;
         internal const float LOOP_0_ACTIVATION_THRESHOLD = 0.5f;
         internal const float LOOP_01_DIVIDER = 1f; // This number is from the vanilla game
         internal const float LOOP_1_DEACTIVATION_THRESHOLD = 0.125f;
@@ -216,12 +235,19 @@ namespace BetterVR
         private static FieldInfo modeCtrlField;
 
         internal float smoothTargetSpeed = 0;
-        private GaugeHitIndicator gaugeHitIndicator;
-        private HashSet<HSpeedGesture> gestures = new HashSet<HSpeedGesture>();
+        internal GaugeHitIndicator gaugeHitIndicator { get; private set; }
+        private HashSet<HSpeedGesture> sourceGestures = new HashSet<HSpeedGesture>();
 
         void Awake()
         {
             modeCtrlField = typeof(HScene).GetField("modeCtrl", BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+
+        void OnDisable()
+        {
+            outputY = 0;
+            var ctrl = Singleton<HSceneFlagCtrl>.Instance;
+            if (ctrl) ctrl.speedGuageRate = ORIGINAL_SPEED_GAUGE_RATE;
         }
 
         void FixedUpdate()
@@ -231,22 +257,28 @@ namespace BetterVR
 
             UpdateSmoothTargetSpeed(hCtrl, Time.fixedDeltaTime);
 
-            bool isEffective = (smoothTargetSpeed > MIN_EFFECTIVE_SPEED);
-            if (gaugeHitIndicator == null) gaugeHitIndicator = new GaugeHitIndicator();
-            gaugeHitIndicator.UpdateIndicators(isEffective);
+            if (smoothTargetSpeed < MIN_EFFECTIVE_SPEED)
+            {
+                enabled = false;
+                return;
+            }
 
             // Reduce feel increase rate for realism.
-            hCtrl.speedGuageRate = isEffective && hCtrl.feel_f < 0.75f ? CUSTOM_SPEED_GAUGE_RATE : ORIGINAL_SPEED_GAUGE_RATE;
+            hCtrl.speedGuageRate = hCtrl.feel_f < 0.75f ? CUSTOM_SPEED_GAUGE_RATE : ORIGINAL_SPEED_GAUGE_RATE;
 
-            if (!isEffective)
+            if (hCtrl.isGaugeHit)
             {
-                outputY = 0;
-                return;
+                if (gaugeHitIndicator == null)
+                {
+                    gaugeHitIndicator = new GameObject("GaugeHitIndicator").AddComponent<GaugeHitIndicator>();
+                }
+                gaugeHitIndicator.gameObject.SetActive(true);
             }
 
             UpdateOutput(hCtrl);
 
-            if (IsAibu() && smoothTargetSpeed < LOOP_0_DEACTIVATION_THRESHOLD && hCtrl.loopType >= 0 && hCtrl.loopType <= 2)
+            if (IsAibu() && !hCtrl.isGaugeHit && hCtrl.loopType >= 0 && hCtrl.loopType <= 2 &&
+                smoothTargetSpeed < LOOP_0_DEACTIVATION_THRESHOLD)
             {
                 // Allow stopping action with hand motion in Aibu mode.
                 StopMotion(hCtrl);
@@ -283,6 +315,11 @@ namespace BetterVR
                 return;
             }
 
+            outputY = 0;
+
+            // No-turning-back point, stay in gauge hit area
+            if (hCtrl.feel_f > 0.965f && hCtrl.isGaugeHit) return;
+
             float bufferRadius = hCtrl.wheelActionCount;
             var clampedSpeed = Mathf.Clamp(smoothTargetSpeed, 0, 2);
             if (hCtrl.speed < LOOP_01_DIVIDER)
@@ -294,7 +331,6 @@ namespace BetterVR
                 if (clampedSpeed > LOOP_1_DEACTIVATION_THRESHOLD) clampedSpeed = Mathf.Max(clampedSpeed, LOOP_01_DIVIDER + bufferRadius);
             }
 
-            outputY = 0;
             // if (clampedSpeed >= hCtrl.speed + bufferRadius) outputY = 1;
             //if (clampedSpeed <= hCtrl.speed - bufferRadius) outputY = -1;
 
@@ -308,14 +344,14 @@ namespace BetterVR
             return anim.Proc(GetModeCtrl(hScene), ctrl.nowAnimationInfo, 1);
         }
 
-        internal void AddGesture(HSpeedGesture gesture)
+        internal void AddSourceGesture(HSpeedGesture gesture)
         {
-            gestures.Add(gesture);
+            sourceGestures.Add(gesture);
         }
 
-        internal void RemoveGesture(HSpeedGesture gesture)
+        internal void RemoveSourceGesture(HSpeedGesture gesture)
         {
-            gestures.Remove(gesture);
+            sourceGestures.Remove(gesture);
         }
 
         private void UpdateSmoothTargetSpeed(HSceneFlagCtrl hCtrl, float deltaTime)
@@ -323,7 +359,7 @@ namespace BetterVR
             float targetSpeed = IDLE_SPEED;
             bool hasMildTouching = false;
 
-            foreach (var gesture in gestures)
+            foreach (var gesture in sourceGestures)
             {
                 if (!gesture.isTouching) continue;
 
