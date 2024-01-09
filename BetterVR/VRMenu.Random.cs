@@ -35,6 +35,8 @@ namespace BetterVR
 
             SetMales();
 
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.white);
+
             //Load the HScene
             Scene.LoadReserve(new Scene.Data
             {
@@ -292,7 +294,7 @@ namespace BetterVR
 
         void Update()
         {
-            if (Singleton<VRSelectScene>.Instance == null || randomButton == null) return;
+            if (Singleton<VRSelectScene>.Instance == null || Scene.IsNowLoading || randomButton == null) return;
 
             if (Input.GetKeyDown("enter") || Input.GetKeyDown("return"))
             {
