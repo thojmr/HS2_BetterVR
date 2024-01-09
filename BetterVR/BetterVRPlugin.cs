@@ -72,8 +72,6 @@ namespace BetterVR
 
             // if (BetterVRPlugin.debugLog && Time.frameCount % 10 == 0) BetterVRPlugin.Logger.LogInfo($" SqueezeToTurn {SqueezeToTurn.Value} VRControllerInput.VROrigin {VRControllerInput.VROrigin}");        
 
-            VRControllerInput.MaybeRestoreVrOriginTransform();
-
             VRControllerInput.UpdateSqueezeMovement();
         }
 
