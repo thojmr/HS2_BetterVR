@@ -287,7 +287,6 @@ namespace BetterVR
 
             AddColliderInChildren(character.transform);
             hasAddedColliders = true;
-            BetterVRPluginHelper.UpdatePrivacyScreen(Color.black);
         }
 
         void OnDestroy()
