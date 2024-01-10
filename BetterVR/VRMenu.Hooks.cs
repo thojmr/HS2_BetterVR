@@ -143,7 +143,7 @@ namespace BetterVR
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(OpenUICrtl), "Start")]
-        private static void OpenUICrtlPatch(OpenUICtrl __instance)
+        private static void OpenUICrtlPatch(OpenUICrtl __instance)
         {
             __instance.GetOrAddComponent<VRControllerInput.MenuAutoGrab>();
         }
