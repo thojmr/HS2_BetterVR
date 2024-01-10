@@ -319,6 +319,7 @@ namespace BetterVR
             }
         }
 
+        // Attaches a small menu to the hand after long pressing Y/B
         public class MenuAutoGrab : MonoBehaviour
         {
             private static FieldInfo cgMenuField;
@@ -367,16 +368,16 @@ namespace BetterVR
                 }
 
 
-                var wasHandRoleInvalid = (handRole == HandRole.Invalid);
-
-                if (!wasHandRoleInvalid && ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Menu))
+                if (handRole != HandRole.Invalid && ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Menu))
                 {
+                    // Reset menu scale to vanilla size and close it.
                     if (originalScale != null) menu.transform.localScale = (Vector3)originalScale;
                     menu.Enable(false, true, false);
                     handRole = HandRole.Invalid;
                     return;
                 }
 
+                var previousHandRole = handRole;
                 if (leftButtonPressTime >= BUTTON_PRESS_TIME_THRESHOLD)
                 {
                     handRole = HandRole.LeftHand;
@@ -390,18 +391,24 @@ namespace BetterVR
 
                 if (handRole == HandRole.Invalid || !hand) return;
 
-                if (wasHandRoleInvalid)
+                if (handRole != previousHandRole)
                 {
+                    // Open the menu.
                     menu.Enable(true, true, false);
+
+                    // Scale to the right size.
                     if (originalScale == null) originalScale = menu.transform.localScale;
                     Vector3 newScale = hand.lossyScale / 4096f;
                     if (menu.transform.parent) newScale /= menu.transform.parent.lossyScale.x;
                     menu.transform.localScale = newScale;
+
+                    if (controllerManager == null) controllerManager = GameObject.FindObjectOfType<ControllerManager>();
                     controllerManager?.SetLeftLaserPointerActive(true);
                     controllerManager?.SetRightLaserPointerActive(true);
                     controllerManager?.UpdateActivity();
                 }
 
+                // Move the menu with the hand.
                 menu.transform.SetPositionAndRotation(hand.TransformPoint(0, 1f / 32, 3f / 16), hand.rotation * Quaternion.Euler(90, 0, 0));
             }
         }
