@@ -374,6 +374,10 @@ namespace BetterVR
                     if (originalScale != null) menu.transform.localScale = (Vector3)originalScale;
                     menu.Enable(false, true, false);
                     handRole = HandRole.Invalid;
+                    // Activate the laser on the menu hand so that the vanilla game will hide it upon button release;
+                    // Hide the laser on the pointing hand directly.
+                    controllerManager?.SetLeftLaserPointerActive(handRole == HandRole.LeftHand);
+                    controllerManager?.SetRightLaserPointerActive(handRole == HandRole.RightHand);
                     return;
                 }
 
@@ -403,6 +407,7 @@ namespace BetterVR
                     menu.transform.localScale = newScale;
 
                     if (controllerManager == null) controllerManager = GameObject.FindObjectOfType<ControllerManager>();
+                    // Activate both laser pointers and the vanilla game logic will hide the laser on the menu hand upon button release.
                     controllerManager?.SetLeftLaserPointerActive(true);
                     controllerManager?.SetRightLaserPointerActive(true);
                     controllerManager?.UpdateActivity();
