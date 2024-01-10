@@ -1,6 +1,8 @@
 using TMPro;
 using HTC.UnityPlugin.Vive;
+using Illusion.Extensions;
 using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace BetterVR
@@ -10,9 +12,8 @@ namespace BetterVR
         internal static ViveRoleProperty roleH { get; private set; } = ViveRoleProperty.New(DeviceRole.Hmd);
         internal static ViveRoleProperty roleR { get; private set; } = ViveRoleProperty.New(HandRole.RightHand);
         internal static ViveRoleProperty roleL { get; private set; } = ViveRoleProperty.New(HandRole.LeftHand);
+        internal static ControllerManager controllerManager;
         internal static bool isDraggingScale { get { return twoHandedWorldGrab != null && twoHandedWorldGrab.canScale; } }
-        private static Vector3? lastVrOriginPosition;
-        private static Quaternion? lastVrOriginRotation;
         private static TwoHandedWorldGrab _twoHandedWorldGrab;
         private static TwoHandedWorldGrab twoHandedWorldGrab {
             get {
@@ -41,49 +42,6 @@ namespace BetterVR
             if (roleProperty == roleL) return HandRole.LeftHand;
             if (roleProperty == roleR) return HandRole.RightHand;
             return HandRole.Invalid;
-        }
-
-        internal static void RecordVrOriginTransform()
-        {
-            Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
-
-            if (vrOrigin == null) return;
-
-            lastVrOriginPosition = vrOrigin.position;
-            lastVrOriginRotation = vrOrigin.rotation;
-        }
-
-        internal static void ClearRecordedVrOriginTransform()
-        {
-            lastVrOriginPosition = null;
-            lastVrOriginRotation = null;
-        }
-
-        internal static void MaybeRestoreVrOriginTransform()
-        {
-            if (Manager.Config.HData.InitCamera)
-            {
-                return;
-            }
-
-            Transform vrOrigin = BetterVRPluginHelper.VROrigin?.transform;
-            if (vrOrigin == null) return;
-
-            if (lastVrOriginPosition != null && lastVrOriginRotation != null)
-            {
-                // Force restoring last known camera transform before animation change
-                // since vanilla game erroneously resets camera after changing animation
-                // even if the camera init option is toggled off.
-                vrOrigin.SetPositionAndRotation((Vector3)lastVrOriginPosition, (Quaternion)lastVrOriginRotation);
-            }
-
-            // Stop attempting to restore camera transform if there is any input that might move the camera.
-            if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) ||
-                ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip) ||
-                Mathf.Abs(BetterVRPluginHelper.GetRightHandPadStickCombinedOutput().x) > 0.25f || !Manager.HSceneManager.isHScene)
-            {
-                ClearRecordedVrOriginTransform();
-            }
         }
 
         /// <summary>
@@ -264,16 +222,26 @@ namespace BetterVR
         {
             Transform worldPivot;
             Transform vrOrginPlacer;
+            Transform stabilizer;
             Vector3 desiredControllerPosition;
 
             void Awake()
             {
-                (worldPivot = new GameObject().transform).parent = transform;
+                (worldPivot = new GameObject().transform).parent = new GameObject("RotationStabilizedController").transform;
+                worldPivot.parent.parent = transform;
+                worldPivot.parent.localPosition = Vector3.zero;
+                worldPivot.parent.localRotation = Quaternion.identity;
                 (vrOrginPlacer = new GameObject().transform).parent = new GameObject().transform;
             }
 
             void OnEnable()
             {
+                // stabilizer =
+                //    transform.GetComponentInParent<ViveRoleSetter>()?.GetComponentInChildren<HTC.UnityPlugin.PoseTracker.PoseStablizer>(true)?.transform;
+                stabilizer = null;
+
+                if (stabilizer) worldPivot.parent.rotation = stabilizer.rotation;
+
                 // Place the world pivot at neutral rotation.
                 worldPivot.rotation = Quaternion.identity;
                 // Pivot the world around the controller.
@@ -284,6 +252,8 @@ namespace BetterVR
 
             void OnRenderObject()
             {
+                if (stabilizer) worldPivot.parent.rotation = stabilizer.rotation;
+
                 var vrOrigin = BetterVRPluginHelper.VROrigin;
                 if (!vrOrigin) return;
 
@@ -309,6 +279,130 @@ namespace BetterVR
 
                 // Move and rotate vrOrgin to restore the original position and rotation of the controller.
                 vrOrigin.transform.SetPositionAndRotation(vrOrginPlacer.position, vrOrginPlacer.rotation);
+            }
+        }
+
+        public class PreventMovement : MonoBehaviour
+        {
+            private const float EXPIRATION_TIME = 16;
+            private Vector3 persistentPosition;
+            private Quaternion persitionRotation;
+            private float activeTime;
+
+            void OnEnable()
+            {
+                persistentPosition = transform.position;
+                persitionRotation = transform.rotation;
+                activeTime = 0;
+            }
+
+            void Update()
+            {
+                activeTime += Time.deltaTime;
+
+                // Stop attempting to restore camera transform if there is any input that might move the camera.
+                if (activeTime > EXPIRATION_TIME ||
+                    ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Grip) ||
+                    ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Grip) ||
+                    Mathf.Abs(BetterVRPluginHelper.GetLeftHandPadStickCombinedOutput().x) > 0.25f ||
+                    Mathf.Abs(BetterVRPluginHelper.GetRightHandPadStickCombinedOutput().x) > 0.25f ||
+                    !Manager.HSceneManager.isHScene)
+                {
+                    this.enabled = false;
+                    return;
+                }
+
+                // Force restoring last known camera transform before animation change
+                // since vanilla game erroneously resets camera after changing animation
+                // even if the camera init option is toggled off.
+                transform.SetPositionAndRotation(persistentPosition, persitionRotation);
+            }
+        }
+
+        public class MenuAutoGrab : MonoBehaviour
+        {
+            private static FieldInfo cgMenuField;
+            private float BUTTON_PRESS_TIME_THRESHOLD = 0.5f;
+            private float leftButtonPressTime = 0;
+            private float rightButtonPressTime = 0;
+            private Transform hand;
+            private Vector3? originalScale;
+            private CanvasGroup menu;
+            internal HandRole handRole { get; private set; } = HandRole.Invalid;
+
+            void Awake()
+            {
+                if (cgMenuField == null) cgMenuField = typeof(HS2VR.OpenUICrtl).GetField("cgMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+            }
+
+            void Update()
+            {
+                if (menu == null)
+                {
+                    var ctrl = GetComponent<HS2VR.OpenUICrtl>();
+                    if (ctrl != null) menu = (CanvasGroup)cgMenuField.GetValue(ctrl);
+                }
+
+                var camera = BetterVRPluginHelper.VRCamera;
+
+                if (menu == null || camera == null) return;
+
+
+                if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Menu))
+                {
+                    leftButtonPressTime += Time.deltaTime;
+                }
+                else
+                {
+                    leftButtonPressTime = 0;
+                }
+
+                if (ViveInput.GetPressEx<HandRole>(HandRole.RightHand, ControllerButton.Menu))
+                {
+                    rightButtonPressTime += Time.deltaTime;
+                }
+                else
+                {
+                    rightButtonPressTime = 0;
+                }
+
+
+                var wasHandRoleInvalid = (handRole == HandRole.Invalid);
+
+                if (!wasHandRoleInvalid && ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Menu))
+                {
+                    if (originalScale != null) menu.transform.localScale = (Vector3)originalScale;
+                    menu.Enable(false, true, false);
+                    handRole = HandRole.Invalid;
+                    return;
+                }
+
+                if (leftButtonPressTime >= BUTTON_PRESS_TIME_THRESHOLD)
+                {
+                    handRole = HandRole.LeftHand;
+                    hand = BetterVRPluginHelper.leftControllerCenter;
+                }
+                else if (rightButtonPressTime >= BUTTON_PRESS_TIME_THRESHOLD)
+                {
+                    handRole = HandRole.RightHand;
+                    hand = BetterVRPluginHelper.rightControllerCenter;
+                }
+
+                if (handRole == HandRole.Invalid || !hand) return;
+
+                if (wasHandRoleInvalid)
+                {
+                    menu.Enable(true, true, false);
+                    if (originalScale == null) originalScale = menu.transform.localScale;
+                    Vector3 newScale = hand.lossyScale / 4096f;
+                    if (menu.transform.parent) newScale /= menu.transform.parent.lossyScale.x;
+                    menu.transform.localScale = newScale;
+                    controllerManager?.SetLeftLaserPointerActive(true);
+                    controllerManager?.SetRightLaserPointerActive(true);
+                    controllerManager?.UpdateActivity();
+                }
+
+                menu.transform.SetPositionAndRotation(hand.TransformPoint(0, 1f / 32, 3f / 16), hand.rotation * Quaternion.Euler(90, 0, 0));
             }
         }
     }
