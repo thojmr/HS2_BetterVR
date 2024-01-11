@@ -96,6 +96,7 @@ namespace BetterVR
             SetVRControllerPointerAngle = Config.Bind<float>("VR General", "Laser Pointer Angle", -5, 
                  new ConfigDescription("0 is the default angle, and negative is down",
                  new AcceptableValueRange<float>(-90, 90)));
+            SetVRControllerPointerAngle.SettingChanged += SetVRControllerPointerAngle_SettingsChanged;
 
             FixWorldSizeScale = Config.Bind<bool>("VR General", "Fix World Scale", true, 
                 new ConfigDescription("Everything appears larger in VR, so this will shrink the worldsize down to a more realistic size."));
@@ -179,6 +180,11 @@ namespace BetterVR
         internal static bool IsHidingControllersEnabled()
         {
             return HandDisplay.Value == "Gloves";
+        }
+
+        internal void SetVRControllerPointerAngle_SettingsChanged(object sender, System.EventArgs e) 
+        {
+            VRControllerPointer.UpdateAngles();
         }
 
         internal void FixWorldSizeScale_SettingsChanged(object sender, System.EventArgs e) 
