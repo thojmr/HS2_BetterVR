@@ -131,7 +131,7 @@ namespace BetterVR
             }
 
             // Look for possible interacting colliders
-            Collider[] colliders = Physics.OverlapCapsule(capsuleStart.position, capsuleEnd.position, activationRadius * scale);
+            Collider[] colliders = Physics.OverlapCapsule(capsuleStart.position, capsuleEnd.position, activationRadius * scale, layerMask: 1 << StripUpdater.H_CAMERA_LAYER);
             foreach (var collider in colliders)
             {
                 var interactionCollider = collider.GetComponent<InteractionCollider>();
