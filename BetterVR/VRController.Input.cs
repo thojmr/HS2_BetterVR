@@ -236,12 +236,6 @@ namespace BetterVR
 
             void OnEnable()
             {
-                // stabilizer =
-                //    transform.GetComponentInParent<ViveRoleSetter>()?.GetComponentInChildren<HTC.UnityPlugin.PoseTracker.PoseStablizer>(true)?.transform;
-                stabilizer = null;
-
-                if (stabilizer) worldPivot.parent.rotation = stabilizer.rotation;
-
                 // Place the world pivot at neutral rotation.
                 worldPivot.rotation = Quaternion.identity;
                 // Pivot the world around the controller.
@@ -326,9 +320,11 @@ namespace BetterVR
             private float BUTTON_PRESS_TIME_THRESHOLD = 0.5f;
             private float leftButtonPressTime = 0;
             private float rightButtonPressTime = 0;
-            private Transform hand;
+            private Transform controllerCenter;
             private Vector3? originalScale;
+            private float? originalLaserWidth;
             private CanvasGroup menu;
+            private bool isInUse = false;
             internal HandRole handRole { get; private set; } = HandRole.Invalid;
 
             void Awake()
@@ -348,7 +344,6 @@ namespace BetterVR
 
                 if (menu == null || camera == null) return;
 
-
                 if (ViveInput.GetPressEx<HandRole>(HandRole.LeftHand, ControllerButton.Menu))
                 {
                     leftButtonPressTime += Time.deltaTime;
@@ -367,16 +362,16 @@ namespace BetterVR
                     rightButtonPressTime = 0;
                 }
 
-
-                if (handRole != HandRole.Invalid && ViveInput.GetPressDownEx<HandRole>(handRole, ControllerButton.Menu))
+                if (isInUse && menu.alpha < 0.9f)
                 {
                     // Reset menu scale to vanilla size and close it.
                     if (originalScale != null) menu.transform.localScale = (Vector3)originalScale;
-                    menu.Enable(false, true, false);
-                    // Activate the laser on the menu hand so that the vanilla game will hide it upon button release;
-                    // Hide the laser on the pointing hand directly.
-                    controllerManager?.SetLeftLaserPointerActive(handRole == HandRole.LeftHand);
-                    controllerManager?.SetRightLaserPointerActive(handRole == HandRole.RightHand);
+                    if (originalLaserWidth != null) SetLaserWidths((float)originalLaserWidth);
+                    isInUse = false;
+
+                    controllerManager?.SetLeftLaserPointerActive(false);
+                    controllerManager?.SetRightLaserPointerActive(false);
+                    controllerManager?.UpdateActivity();
                     handRole = HandRole.Invalid;
                     return;
                 }
@@ -385,15 +380,21 @@ namespace BetterVR
                 if (leftButtonPressTime >= BUTTON_PRESS_TIME_THRESHOLD)
                 {
                     handRole = HandRole.LeftHand;
-                    hand = BetterVRPluginHelper.leftControllerCenter;
+                    controllerCenter = BetterVRPluginHelper.leftControllerCenter;
                 }
                 else if (rightButtonPressTime >= BUTTON_PRESS_TIME_THRESHOLD)
                 {
                     handRole = HandRole.RightHand;
-                    hand = BetterVRPluginHelper.rightControllerCenter;
+                    controllerCenter = BetterVRPluginHelper.rightControllerCenter;
+                }
+                else
+                {
+                    handRole = HandRole.Invalid;
                 }
 
-                if (handRole == HandRole.Invalid || !hand) return;
+                if (handRole == HandRole.Invalid || !controllerCenter) return;
+
+                isInUse = true;
 
                 if (handRole != previousHandRole)
                 {
@@ -402,19 +403,41 @@ namespace BetterVR
 
                     // Scale to the right size.
                     if (originalScale == null) originalScale = menu.transform.localScale;
-                    Vector3 newScale = hand.lossyScale / 4096f;
-                    if (menu.transform.parent) newScale /= menu.transform.parent.lossyScale.x;
-                    menu.transform.localScale = newScale;
+                    Vector3 newScale = controllerCenter.lossyScale / 4096f;
+                    menu.transform.localScale = 
+                        menu.transform.parent == null ? newScale : newScale / menu.transform.parent.lossyScale.x;
+
+                    SetLaserWidths(BetterVRPlugin.PlayerScale / 2f);
 
                     if (controllerManager == null) controllerManager = GameObject.FindObjectOfType<ControllerManager>();
-                    // Activate both laser pointers and the vanilla game logic will hide the laser on the menu hand upon button release.
-                    controllerManager?.SetLeftLaserPointerActive(true);
-                    controllerManager?.SetRightLaserPointerActive(true);
+                    // Hide the laser on the laser hand and show the laser on the other hand.
+                    controllerManager?.SetLeftLaserPointerActive(handRole != HandRole.LeftHand);
+                    controllerManager?.SetRightLaserPointerActive(handRole != HandRole.RightHand);
                     controllerManager?.UpdateActivity();
                 }
 
-                // Move the menu with the hand.
-                menu.transform.SetPositionAndRotation(hand.TransformPoint(0, 1f / 32, 3f / 16), hand.rotation * Quaternion.Euler(90, 0, 0));
+                if (ViveInput.GetPressEx<HandRole>(handRole, ControllerButton.Menu))
+                {
+                    // Move the menu with the hand.
+                    menu.transform.SetPositionAndRotation(
+                        controllerCenter.TransformPoint(0, 1f / 32, 3f / 16),
+                        controllerCenter.rotation * Quaternion.Euler(90, 0, 0));
+                }
+            }
+
+            private void SetLaserWidths(float width)
+            {
+                SetLaserWidth(BetterVRPluginHelper.GetLeftHand(), (float) width);
+                SetLaserWidth(BetterVRPluginHelper.GetRightHand(), (float) width);
+            }
+
+            private void SetLaserWidth(GameObject hand, float width)
+            {
+                if (hand == null) return;
+                var lineRenderer = hand.transform.Find("LaserPointer")?.GetComponentInChildren<LineRenderer>(true);
+                if (lineRenderer == null) return;
+                if (originalLaserWidth == null) originalLaserWidth = lineRenderer.widthMultiplier;
+                lineRenderer.widthMultiplier = width;
             }
         }
     }
