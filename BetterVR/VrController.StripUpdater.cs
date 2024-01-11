@@ -11,6 +11,7 @@ namespace BetterVR
 
     public class StripUpdater
     {
+        internal const int H_CAMERA_LAYER = 22;
         internal static readonly Color[] STRIP_INDICATOR_COLORS =
             new Color[] { Color.blue, Color.red, Color.cyan, Color.magenta, Color.yellow, Color.green, Color.white, Color.black };
         
@@ -210,7 +211,7 @@ namespace BetterVR
 
         private static StripCollider FindClosestStripCollider(Vector3 position, float range, byte minStripLevel = 0, byte maxStripLevel = 2)
         {
-            Collider[] colliders = Physics.OverlapSphere(position, range);
+            Collider[] colliders = Physics.OverlapSphere(position, range, 1 << H_CAMERA_LAYER);
             StripCollider closestStripCollider = null;
             float closestDistance = Mathf.Infinity;
             foreach (Collider collider in colliders)
@@ -353,6 +354,7 @@ namespace BetterVR
             {
                 var collider = gameObject.AddComponent<InteractionCollider>();
                 collider.Init(character, anatomy, parent, scaleReference);
+                collider.gameObject.layer = StripUpdater.H_CAMERA_LAYER;
                 return collider;
             }
             
@@ -360,6 +362,7 @@ namespace BetterVR
             stripCollider.Init(character, anatomy, parent, scaleReference);
             stripCollider.clothType = anatomy.clothType;
             stripCollider.color = StripUpdater.STRIP_INDICATOR_COLORS[anatomy.clothType];
+            stripCollider.gameObject.layer = StripUpdater.H_CAMERA_LAYER;
             return stripCollider;
         }
 
@@ -402,6 +405,7 @@ namespace BetterVR
         void Awake()
         {
             sphereCollider = gameObject.GetOrAddComponent<SphereCollider>();
+            sphereCollider.gameObject.layer = StripUpdater.H_CAMERA_LAYER;
         }
 
         internal void Init(ChaControl character, ColliderAnatomy anatomy, Transform parent, Transform scaleReference) {
