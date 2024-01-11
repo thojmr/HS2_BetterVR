@@ -4,9 +4,10 @@
 set version=0.51
 set name=HS2_BetterVR
 
-IF NOT EXIST  "../release/%name%/BepInEx/plugins" MKDIR  "../release/%name%/BepInEx/plugins"
+IF NOT EXIST  "../releases/%name%/BepInEx/plugins" MKDIR  "../releases/%name%/BepInEx/plugins"
 COPY "../bin/%name%/BepinEx/plugins\%name%.dll" "../release/%name%/BepInEx/plugins"
 
-"%ProgramFiles%\7-Zip\7z.exe" a -tzip "%HOMEPATH%/downloads/%name% v%version%.zip" "../release/%name%" -mx0
-start %HOMEPATH%/downloads
+IF EXIST "%ProgramFiles%\7-Zip\7z.exe" "%ProgramFiles%\7-Zip\7z.exe" a -tzip "../releases/%name% v%version%.zip" "../releases/%name%" -mx0
+IF EXIST "C:\Program Files\7-Zip\7z.exe" "C:\Program Files\7-Zip\7z.exe" a -tzip "../releases/%name% v%version%.zip" "../releases/%name%" -mx0
 
+start .\..\releases
