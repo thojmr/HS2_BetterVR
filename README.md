@@ -20,6 +20,9 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
     - Long press A or X to activate radial menu
     - Move hand to select quick actions
     - Press trigger or close radial menu to perform quick actions
+- Adds feature that attaches a small in-game GUI menu to the hand
+    - Long press B/Y to activate the menu and attach it to hand
+    - Release B/Y to plce the menu in the air
 - Adds feature of using hand movement to dress/undress.
     - Press down trigger close to cloth, hold trigger and drag away to undress
     - Press down trigger some distance away from character, hold trigger and drag onto character to dress
@@ -35,7 +38,8 @@ Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a han
         - In Aibu mode the animation can be started or stopped solely by changing hand speed without using pad or stick 
     - Move hand, mouth, or toy close to certain body parts and start moving
     - Haptic feedback (if enabled) indicates that this feature is in action
-    - Look for a heart icon that may show up which indicates pleasure gauge hit
+    - When the haptic feedback feels like a heart beat, it means the pleasurr gauge is hit
+    - Also look for a heart icon that may show up which indicates pleasure gauge hit
 - Adds option to skip title scene on game start and go straight to select scene.
 - Adds option to unlock all positions regardless of character state.
 - Adds option to tilt VR laser pointers up or down. 
