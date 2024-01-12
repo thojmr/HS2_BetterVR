@@ -33,7 +33,7 @@ namespace BetterVR
                 BetterVRPluginHelper.rightControllerCenter;
 
             if (controller == null || controllerCenter == null) return;
-            var raycaster = controller.GetComponentInChildren<HTC.UnityPlugin.Pointer3D.Pointer3DRaycaster>();
+            var raycaster = controller.GetComponentInChildren<HTC.UnityPlugin.Pointer3D.Pointer3DRaycaster>(true);
             if (raycaster == null) return;
 
             // BetterVRPluginHelper.GetRightHand()?.GetComponentInChildren<GuideLineDrawer>();
