@@ -159,11 +159,14 @@ namespace BetterVR
             heartSymbol.transform.localScale = Vector3.one * smoothGaugeHit;
             heartSymbol.color = color;
             heartSymbol.transform.localRotation = GetRotationPulse(Singleton<HSceneFlagCtrl>.Instance);
+            heartSymbol.gameObject.SetActive(Manager.Config.HData.FeelingGauge);
 
             float h = horizontalLines.transform.localScale.y;
             h = Mathf.Lerp(h, snappedToTarget ? -0.5f : 1.25f, Time.deltaTime * 2);
             horizontalLines.transform.localScale = new Vector3(smoothGaugeHit * 5, Mathf.Clamp(h, 0, smoothGaugeHit), 1);
             horizontalLines.color = color;
+            horizontalLines.gameObject.SetActive(Manager.Config.HData.FeelingGauge);
+
         }
 
         internal static float GetPulsePhase(HSceneFlagCtrl ctrl)
