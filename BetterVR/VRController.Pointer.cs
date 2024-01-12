@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using System.Reflection;
 
 namespace BetterVR
 {    
@@ -45,7 +44,7 @@ namespace BetterVR
             var oldAngles = raycaster.transform.localRotation.eulerAngles;
 
             // Leave the unpatched state available as an option in case there is some problem with the patch.
-            if (BetterVRPlugin.SetVRControllerPointerAngle.Value == 0 && oldAngles.x == 0) return;
+            if (-BetterVRPlugin.SetVRControllerPointerAngle.Value == oldAngles.x) return;
 
             // Rotate the laser pointer to the desired angle.
             raycaster.transform.localRotation = Quaternion.Euler(-BetterVRPlugin.SetVRControllerPointerAngle.Value, 0, 0);
