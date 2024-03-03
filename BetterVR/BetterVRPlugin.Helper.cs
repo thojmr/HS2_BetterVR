@@ -314,12 +314,20 @@ namespace BetterVR
 
         internal static bool TryFinishHSameTime()
         {
-            var fCtrl = Singleton<HSceneFlagCtrl>.Instance;
+            var hCtrl = Singleton<HSceneFlagCtrl>.Instance;
             var sprite = Singleton<HSceneSprite>.Instance;
             var anim = Singleton<Manager.HSceneManager>.Instance?.Hscene?.GetProcBase();
 
-            if (!fCtrl || !sprite || anim == null || fCtrl.loopType < 2) return false;
-            if (anim is Aibu || anim is Houshi || anim is Spnking || anim is Masturbation || anim is Peeping || anim is Les) return false;
+            if (!hCtrl || !sprite || anim == null || hCtrl.loopType < 2) return false;
+            if (anim is Houshi || anim is Spnking || anim is Peeping) return false;
+            if (anim is Aibu || anim is Masturbation || anim is Les)
+            {
+                // No finish button available on the UI, simply set feel to gauge to full
+                hCtrl.feel_f = 1;
+                return true;
+            }
+
+            if (hCtrl.feel_m < 0.75f) return false;
 
             sprite.OnClickFinishSame();
             return true;
