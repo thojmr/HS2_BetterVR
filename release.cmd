@@ -1,9 +1,13 @@
 ::Zips the dll into the correct directory structure for release
 ::Make sure to increment the version
 
-set version=0.2
+set version=0.53
 set name=HS2_BetterVR
 
-IF EXIST "./bin/%name%/BepinEx/plugins/%name%.dll" "%ProgramFiles%\7-Zip\7z.exe" a -tzip "%HOMEPATH%/downloads/%name% v%version%.zip" "./bin/%name%/BepinEx" -mx0
+IF NOT EXIST  "../releases/%name%/BepInEx/plugins" MKDIR  "../releases/%name%/BepInEx/plugins"
+COPY "../bin/%name%/BepinEx/plugins\%name%.dll" "../releases/%name%/BepInEx/plugins"
 
-start %HOMEPATH%/downloads
+IF EXIST "%ProgramFiles%\7-Zip\7z.exe" "%ProgramFiles%\7-Zip\7z.exe" a -tzip "../releases/%name% v%version%.zip" "../releases/%name%" -mx0
+IF EXIST "C:\Program Files\7-Zip\7z.exe" "C:\Program Files\7-Zip\7z.exe" a -tzip "../releases/%name% v%version%.zip" "../releases/%name%" -mx0
+
+start .\..\releases

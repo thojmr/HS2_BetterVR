@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using BetterVR;
 
@@ -6,7 +6,7 @@ using BetterVR;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("BetterVR")]
-[assembly: AssemblyDescription("Adds a few enhancements to VR for story mode")]
+[assembly: AssemblyDescription("Adds a handful of enhancements and new motion control features to VR for story mode")]
 [assembly: AssemblyProduct("BetterVR")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 

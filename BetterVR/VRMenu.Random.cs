@@ -20,7 +20,6 @@ namespace BetterVR
         public static List<GameCharaFileInfo> females = new List<GameCharaFileInfo>();
         public static List<GameCharaFileInfo> males = new List<GameCharaFileInfo>();
 
-
         /// <summary>
         /// When the Random button is presses, set a random female/male, and start the HScene
         /// </summary>
@@ -35,6 +34,8 @@ namespace BetterVR
             Singleton<HSceneManager>.Instance.mapID = Singleton<Game>.Instance.mapNo;
 
             SetMales();
+
+            BetterVRPluginHelper.UpdatePrivacyScreen(Color.white);
 
             //Load the HScene
             Scene.LoadReserve(new Scene.Data
@@ -255,6 +256,8 @@ namespace BetterVR
                 OnSelectRandomBtn();
             });
 
+            __instance.GetOrAddComponent<StartRandomOnKeyEnter>().randomButton = btn;
+
             // if (BetterVRPlugin.debugLog) DebugTools.LogChildrenComponents(btnGOCopy);
 
             //Set back to parent on canvas
@@ -283,6 +286,22 @@ namespace BetterVR
             ClearFemaleSelection();
         }
 
+    }
+
+    internal class StartRandomOnKeyEnter : MonoBehaviour
+    {
+        internal Button randomButton;
+
+        void Update()
+        {
+            if (Singleton<VRSelectScene>.Instance == null || Scene.IsNowLoading || randomButton == null) return;
+
+            if (Input.GetKeyDown("enter") || Input.GetKeyDown("return"))
+            {
+                randomButton.onClick.Invoke();
+                Destroy(this);
+            }
+        }
     }
 
 }

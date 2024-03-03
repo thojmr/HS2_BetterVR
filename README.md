@@ -1,24 +1,58 @@
 # Introduction
-This repository contains the BetterVR plugin for `Honey Select 2 VR`, that adds a few quality of life enhancements.  
-Only tested in `Index/Vive` VR.
+Forked from thojmr/HS2_BetterVR, this plugin for `Honey Select 2 VR` fixes a handful of bugs and add numerous motion control features and quality-of-life improvements.
 
 </br>
 
-No further plans for this.  Feel free to fork and modify. 
-
 ## Features
-- Adds colliders to your controllers, so you can boop.
-- Adds config option `Squeeze to Turn` to turn the camera when squeezing the grips and rotate your wrists.
-- Adds config option `Fix World Scale` to shrink the world size down just a little, since VR makes everything appear bigger than it should.
+- Adds colliders to controller (so you can boop), headset, toy, and floor
+- Adds config option `Squeeze to Turn` to turn the camera when squeezing the grips and triggers and rotating your wrists.
+    - One-handed mode: hold trigger and grip and rotate hand
+    - Two-handed mode: hold both grips and move hands like turning a wheel
+- Adds config option `Fix World Scale` to change the world scale.
+    - Can adjust the scale in config options
+    - Can also hold both grips and both triggers and stretch to adjust the scale
+- Adds config option to allow vertical rotation.
+    - `View reset` option in the radial menu will reset vertical rotation too
 - Adds a `Random` button to the Character selection screen that will select a random female/male, and start the HScene.
-    - You can select a map, and then hit random to use a specific map with random characters
+    - You can select a map, and then hit `random` in the UI or return/enter on the keyboard to use a specific map with random characters
     - (May not work in some cases) The config option `Multiple Heroine when Random`: will add two random heroine to the HScene
+- Adds radial menu with quick actions to recenter view, toggle player visibility, move onto next H stage, etc.
+    - Long press A or X to activate radial menu
+    - Move hand to select quick actions
+    - Press trigger or close radial menu to perform quick actions
+- Adds feature that attaches a small in-game GUI menu to the hand
+    - Long press B/Y to activate the menu and attach it to hand
+    - Release B/Y to plce the menu in the air
+- Adds feature of using hand movement to dress/undress.
+    - Press down trigger close to cloth, hold trigger and drag away to undress
+    - Press down trigger some distance away from character, hold trigger and drag onto character to dress
+- Adds option to display VR controllers as hands/gloves in VR.
+    - If enabled, use radial menu quick action to start adjusting VR hand pose of the other hand
+    - Hold either grip to pause adjustment and have the VR glove move with controller
+    - Press either trigger to finish adjustment
+- Adds a hand-held toy that can be toggled on in the radial menu
+    - Use radial menu to toggle it again to change it into silhouette mode
+    - When holding it, press A or X to attach to it to body (approximated using camera position)
+- Adds feature of using hand movement to adjust H speed.
+    - Start H animation regularly using controller pad/stick first
+        - In Aibu mode the animation can be started or stopped solely by changing hand speed without using pad or stick 
+    - Move hand, mouth, or toy close to certain body parts and start moving
+    - Haptic feedback (if enabled) indicates that this feature is in action
+    - When the haptic feedback feels like a heart beat, it means the pleasurr gauge is hit
+    - Also look for a heart icon that may show up which indicates pleasure gauge hit
+- Adds option to skip title scene on game start and go straight to select scene.
+- Adds option to unlock all positions regardless of character state.
+- Adds option to tilt VR laser pointers up or down. 
+- Fixes the bug of vanilla game not detecting thumb stick input on some platforms.
+- Fixes the bug of vanilla game resets camera when changing animation even if the camera initialization option is toggled off.
+- Fixes the non-interactable silhouette palette in game settings.
+- Fixes the bug that all animations are frozen after opening mod config dialog and closing game settings dialog sometimes.
 
 
 ## How to install
 Almost all plugins are installed in the same way. If there are any extra steps needed they will be added to the plugin descriptions below.
 1. Make sure you have at least BepInEx 5.1 and latest BepisPlugins and KKAPI (Any BetterRepack will do).
-2. Download the latest release of the plugin you want [here](https://github.com/thojmr/BetterVR/releases).
+2. Download the latest release of the plugin you want [here](https://github.com/KhLTz/HS2_BetterVR/releases).
 3. Extract the archive into your game directory. The file HS2_BetterVR.dll should end up in \BepInEx\plugins\ directory.
 4. Check if there are no warnings on game startup, if the plugin has settings it should appear in plugin settings.
 

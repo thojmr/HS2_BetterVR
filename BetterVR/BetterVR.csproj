@@ -1,145 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
 
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FAE04EC0-301F-11D3-BF4B-00C04F79EFBF}</ProjectGuid>
-    <OutputType>library</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <ProjectGuid>{930A00A6-2935-4EA0-81F0-B16D3E71B74F}</ProjectGuid>
+	<OutputType>Library</OutputType>
+	<AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFramework>net46</TargetFramework>
     <RootNamespace>BetterVR</RootNamespace>
     <AssemblyName>HS2_BetterVR</AssemblyName>    
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
+    <DebugType>pdbonly</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\bin\HS2_BetterVR\BepInEx\plugins</OutputPath>
     <DefineConstants>DEBUG;TRACE;HS2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+    <WarningLevel>3</WarningLevel>
+	<CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
+	<PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>embedded</DebugType>
+    <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\HS2_BetterVR\BepInEx\plugins</OutputPath>
     <DefineConstants>TRACE;HS2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DebugSymbols>true</DebugSymbols>
-    <Prefer32Bit>false</Prefer32Bit>
+    <WarningLevel>3</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
-  <ItemGroup>    
-    <Reference Include="0Harmony,  Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\IllusionLibs.BepInEx.Harmony.2.2.0.1\lib\net35\0Harmony.dll</HintPath>
-      <Private>False</Private>
+  <ItemGroup>
+	<Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, processorArchitecture=MSIL">
+		<HintPath>..\packages\IllusionLibs.BepInEx.Harmony.2.9.0\lib\net35\0Harmony.dll</HintPath>
+		<Private>False</Private>
+	</Reference>
+	<Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+		<HintPath>..\packages\HS2VR.Assembly-CSharp\Assembly-CSharp.dll</HintPath>
+		<Private>False</Private>
+	</Reference>
+	<Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+	  <HintPath>..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.2020.5.29.4\lib\net46\Assembly-CSharp-firstpass.dll</HintPath>
+	  <Private>True</Private>
+	  <SpecificVersion>True</SpecificVersion>
+	</Reference>
+	<Reference Include="BepInEx, Version=5.4.22.0, Culture=neutral, PublicKeyToken=null">
+	  <HintPath>..\packages\IllusionLibs.BepInEx.5.4.22\lib\net35\BepInEx.dll</HintPath>
+	  <Private>True</Private>
+	  <SpecificVersion>True</SpecificVersion>
+	</Reference>
+	<Reference Include="BepInEx, Version=5.4.22.0, Culture=neutral, processorArchitecture=MSIL">
+		<HintPath>..\packages\IllusionLibs.BepInEx.5.4.22\lib\net35\BepInEx.dll</HintPath>
+		<Private>False</Private>
+	</Reference>
+    <Reference Include="HS2ABMX, Version=5.0.6.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\ABMX.HS2ABMX.5.0.6\lib\net46\HS2ABMX.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="Assembly-CSharp,  Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp.2020.5.29.2\lib\net46\Assembly-CSharp_VR.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="HS2API, Version=1.36.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionModdingAPI.HS2API.1.36.0\lib\net46\HS2API.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass,  Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.Assembly-CSharp-firstpass.2020.5.29.2\lib\net46\Assembly-CSharp-firstpass.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="BepInEx,  Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.BepInEx.5.1.0\lib\net35\BepInEx.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="BepInEx.Harmony,  Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.BepInEx.Harmony.2.0.3.1\lib\net35\BepInEx.Harmony.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="HS2ABMX,  Culture=neutral, processorArchitecture=MSIL" >
-      <HintPath>..\packages\ABMX.HS2ABMX.4.4.1\lib\net46\HS2ABMX.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="HS2API, Version=1.15,  Culture=neutral, processorArchitecture=MSIL" >
-      <HintPath>..\packages\IllusionModdingAPI.HS2API.1.15.0\lib\net46\HS2API.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="HS2_ExtensibleSaveFormat,  Culture=neutral, processorArchitecture=MSIL" >
-      <HintPath>..\packages\ExtensibleSaveFormat.HoneySelect2.16.2.0.2\lib\net46\HS2_ExtensibleSaveFormat.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Sirenix.Serialization,   Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.Sirenix.Serialization.2020.5.29.2\lib\net46\Sirenix.Serialization.dll</HintPath>
+    <Reference Include="HS2API, Version=1.36.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionModdingAPI.HS2API.1.36.0\lib\net46\HS2API.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine,  Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.CoreModule.2018.4.11.2\lib\net46\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="HS2_ExtensibleSaveFormat, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\ExtensibleSaveFormat.HoneySelect2.19.3.0\lib\net46\HS2_ExtensibleSaveFormat.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="UniRx,  Culture=neutral, processorArchitecture=MSIL" >
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UniRx.2020.5.29.2\lib\net46\UniRx.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="IL, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.IL.2020.5.29.4\lib\net46\IL.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="UnityEngine.CoreModule,  Culture=neutral, processorArchitecture=MSIL" >
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.CoreModule.2018.4.11.2\lib\net46\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Sirenix.Serialization, Version=2.0.13.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.Sirenix.Serialization.2020.5.29.4\lib\net46\Sirenix.Serialization.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="UnityEngine.PhysicsModule,  Culture=neutral, processorArchitecture=MSIL" >
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.PhysicsModule.2018.4.11.2\lib\net46\UnityEngine.PhysicsModule.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="UniRx, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UniRx.2020.5.29.4\lib\net46\UniRx.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="UnityEngine.UI,  Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.UI.2018.4.11.2\lib\net46\UnityEngine.UI.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.Unity.TextMeshPro.2018.4.11.4\lib\net46\Unity.TextMeshPro.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.2018.4.11.2\lib\net46\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.CoreModule.2018.4.11.4\lib\net46\UnityEngine.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.TextRenderingModule.2018.4.11.2\lib\net46\UnityEngine.TextRenderingModule.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="UnityEngine.AssetBundleModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.AssetBundleModule.2018.4.11.4\lib\net46\UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
+    </Reference>	  
+	<Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.CoreModule.2018.4.11.4\lib\net46\UnityEngine.CoreModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="IL, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\IllusionLibs.HoneySelect2.IL.2020.5.29.2\lib\net46\IL.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.ImageConversionModule.2018.4.11.4\lib\net46\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.IMGUIModule.2018.4.11.4\lib\net46\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.PhysicsModule.2018.4.11.4\lib\net46\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.TextRenderingModule.2018.4.11.4\lib\net46\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
     </Reference>
 
     <Reference Include="SteamVR, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SteamVR.dll</HintPath>
       <Private>False</Private>
     </Reference>
+	  
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.UI.2018.4.11.4\lib\net46\UnityEngine.UI.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
+    </Reference>
+
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\IllusionLibs.HoneySelect2.UnityEngine.UIModule.2018.4.11.4\lib\net46\UnityEngine.UIModule.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>True</SpecificVersion>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="BetterVRPlugin.cs" />
     <Compile Include="GUI/BetterVRPlugin.Config.cs" />
-    <Compile Include="BetterVRPlugin.Helper.cs" />
-    <Compile Include="VRController.Collider.Helper.cs" />
-    <Compile Include="VRController.Collider.cs" />
-    <Compile Include="VRController.Pointer.cs" />
-    <Compile Include="VRController.Input.cs" />
-    <Compile Include="VRController.Hooks.cs" />
-    <Compile Include="VRMenu.Random.cs" />
-    <Compile Include="VRMenu.Hooks.cs" />
-    <Compile Include="../../#DebugTools/DebugTools.cs" />
-  </ItemGroup>
+  </ItemGroup> 
 
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup> 
 
-  <ItemGroup>    
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<Exec Command="../release.cmd"/>
+  </Target>
 </Project>
